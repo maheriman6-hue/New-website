@@ -13,6 +13,7 @@ export function Cursor() {
     const cursor = cursorRef.current;
     if (!cursor) return;
 
+    gsap.set(cursor, { xPercent: -50, yPercent: -50 });
     const moveX = gsap.quickTo(cursor, 'x', { duration: 0.18, ease: 'power3.out' });
     const moveY = gsap.quickTo(cursor, 'y', { duration: 0.18, ease: 'power3.out' });
 
@@ -23,17 +24,20 @@ export function Cursor() {
 
     const onEnter = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
-      const toggle = target?.closest('a, button, [data-cursor-label]');
+      const toggle = target?.closest<HTMLElement>('[data-cursor-label]');
       if (!toggle) return;
 
-      const custom = toggle.getAttribute('data-cursor-label') ?? 'View ↗';
+      const custom = toggle.getAttribute('data-cursor-label');
+      if (!custom) return;
       setLabel(custom);
       setIsHovering(true);
     };
 
     const onLeave = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
-      if (!target?.closest('a, button, [data-cursor-label]')) return;
+      const toggle = target?.closest<HTMLElement>('[data-cursor-label]');
+      if (!toggle) return;
+      if (event.relatedTarget instanceof Node && toggle.contains(event.relatedTarget)) return;
       setLabel('');
       setIsHovering(false);
     };
