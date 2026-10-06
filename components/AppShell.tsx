@@ -43,6 +43,7 @@ export function AppShell({
       <header className={[
         'z-30 flex items-start justify-between px-4 pt-4 sm:px-6 lg:px-7',
         overlayHeader ? 'absolute inset-x-0 top-0' : 'relative',
+        pathname === '/contact' ? 'contact-header' : '',
       ].join(' ')}>
         <Link href="/" className="brand-pill">
           <span className="font-display text-[2rem] leading-none tracking-[-0.08em] font-black uppercase">VARGA</span>
@@ -52,7 +53,9 @@ export function AppShell({
         <nav
           className={[
             'app-nav-pill ml-4 mt-0 flex items-center rounded-full border px-3 py-2 shadow-soft backdrop-blur-[2px]',
-            heroTone === 'light' ? 'border-black/10 bg-[rgba(255,255,255,0.22)]' : 'border-white/10 bg-[rgba(22,22,22,0.40)]',
+            heroTone === 'light' && pathname !== '/contact'
+              ? 'border-black/10 bg-[rgba(255,255,255,0.22)]'
+              : 'border-white/10 bg-[rgba(22,22,22,0.40)]',
           ].join(' ')}
         >
           {navItems.map((item) => {
@@ -84,7 +87,11 @@ export function AppShell({
 
       <footer
         ref={footerRef}
-        className={['footer-motion relative z-20 border-t border-[#e8261a] bg-[#0a0a0a] px-4 pb-8 pt-5 sm:px-6 lg:px-7', footerVisible ? 'is-in-view' : ''].join(' ')}
+        className={[
+          'footer-motion relative z-20 border-t border-[#e8261a] bg-[#0a0a0a] px-4 pb-8 pt-5 sm:px-6 lg:px-7',
+          pathname === '/contact' ? 'contact-footer' : '',
+          footerVisible ? 'is-in-view' : '',
+        ].join(' ')}
       >
         <div className="footer-motion__rule" />
 

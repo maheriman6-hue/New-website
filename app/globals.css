@@ -1462,6 +1462,20 @@ select {
     opacity: 1 !important;
     transform: none !important;
   }
+
+  .contact-page__shutters {
+    display: none;
+  }
+
+  .contact-page__content > * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .contact-page__email span,
+  .contact-page__button {
+    transition: none !important;
+  }
 }
 
 @media (max-width: 700px) {
@@ -2065,6 +2079,192 @@ select {
   text-align: right;
 }
 
+.contact-page {
+  position: relative;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.contact-header {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 30;
+}
+
+.contact-header .app-nav-pill {
+  border-color: rgba(10, 10, 10, 0.16);
+  background: rgba(22, 22, 22, 0.48);
+}
+
+.contact-page__content {
+  position: relative;
+  z-index: 2;
+  padding: clamp(3.5rem, 7vw, 7rem) clamp(1rem, 2.3vw, 2.5rem) clamp(5rem, 9vw, 9rem);
+}
+
+.contact-page__eyebrow {
+  margin: 0 0 clamp(2rem, 4vw, 4rem);
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.contact-page__title {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: clamp(10rem, 28vw, 32rem);
+  font-weight: 400;
+  letter-spacing: -0.075em;
+  line-height: 0.68;
+}
+
+.contact-page__email {
+  display: inline-flex;
+  align-items: baseline;
+  gap: clamp(0.5rem, 1.5vw, 1.5rem);
+  margin-top: clamp(2rem, 5vw, 5rem);
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 0.08em;
+  font-family: var(--font-serif), serif;
+  font-size: clamp(2rem, 7.4vw, 8rem);
+  font-style: italic;
+  letter-spacing: -0.055em;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.contact-page__email span {
+  flex: none;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 0.55em;
+  font-style: normal;
+  transition: transform 220ms ease;
+}
+
+.contact-page__email:hover span {
+  transform: translate(0.12em, -0.12em);
+}
+
+.contact-page__details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1rem, 1.5vw, 1.5rem);
+  margin-top: clamp(3rem, 7vw, 7rem);
+}
+
+.contact-page__detail {
+  display: flex;
+  min-height: 10rem;
+  flex-direction: column;
+  align-items: flex-start;
+  border-top: 1px solid rgba(10, 10, 10, 0.55);
+  padding-top: 1.25rem;
+}
+
+.contact-page__detail h2 {
+  margin: 0 0 1.2rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.contact-page__detail p,
+.contact-page__detail a {
+  margin: 0 0 0.6rem;
+  font-size: clamp(0.95rem, 1.25vw, 1.25rem);
+}
+
+.contact-page__detail a {
+  text-underline-offset: 0.2em;
+}
+
+.contact-page__detail--social {
+  grid-column: 1 / 2;
+  min-height: 8rem;
+}
+
+.contact-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: clamp(3rem, 6vw, 6rem);
+}
+
+.contact-page__button {
+  display: inline-flex;
+  min-height: 3.7rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  border-radius: 999px;
+  padding: 0 1.7rem;
+  transition: transform 220ms ease, background-color 220ms ease, color 220ms ease;
+}
+
+.contact-page__button:hover,
+.contact-page__button:focus-visible {
+  transform: translateY(-2px);
+}
+
+.contact-page__button--dark {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.contact-page__button--dark:hover {
+  background: #292522;
+}
+
+.contact-page__button--red {
+  background: var(--red);
+  color: var(--ink);
+}
+
+.contact-page__button--red:hover {
+  background: #f04435;
+}
+
+.contact-page__shutters {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  pointer-events: none;
+}
+
+.contact-page__shutter {
+  grid-row: 1;
+  height: 100%;
+  background: var(--ink);
+  backface-visibility: hidden;
+  transform: translateZ(0) scaleY(0);
+  transform-origin: center top;
+}
+
+.contact-page__shutter:nth-child(1) { margin-top: 63%; }
+.contact-page__shutter:nth-child(2) { margin-top: 56%; }
+.contact-page__shutter:nth-child(3) { margin-top: 49%; }
+.contact-page__shutter:nth-child(4) { margin-top: 42%; }
+.contact-page__shutter:nth-child(5) { margin-top: 35%; }
+.contact-page__shutter:nth-child(6) { margin-top: 28%; }
+.contact-page__shutter:nth-child(7) { margin-top: 21%; }
+.contact-page__shutter:nth-child(8) { margin-top: 14%; }
+.contact-page__shutter:nth-child(9) { margin-top: 7%; }
+.contact-page__shutter:nth-child(10) { margin-top: 0%; }
+
+.contact-footer {
+  border-top-color: transparent;
+}
+
+.contact-footer .footer-motion__rule {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .portrait-reveal__shutters {
     display: none;
@@ -2178,4 +2378,62 @@ select {
   .recognition-table__year {
     font-size: 8px;
   }
+
+  .contact-page__content {
+    padding: 2.75rem 1rem 4rem;
+  }
+
+  .contact-page__eyebrow {
+    font-size: 8px;
+  }
+
+  .contact-page__title {
+    font-size: clamp(9rem, 42vw, 18rem);
+  }
+
+  .contact-page__email {
+    gap: 0.45rem;
+    font-size: clamp(1.8rem, 9vw, 4rem);
+  }
+
+  .contact-page__details {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 3.5rem;
+  }
+
+  .contact-page__detail,
+  .contact-page__detail--social {
+    min-height: auto;
+    grid-column: auto;
+    padding: 1rem 0 0.5rem;
+  }
+
+  .contact-page__detail h2 {
+    margin-bottom: 0.8rem;
+  }
+
+  .contact-page__actions {
+    margin-top: 2.5rem;
+  }
+
+  .contact-page__button {
+    min-height: 3.2rem;
+    padding: 0 1.15rem;
+    font-size: 0.88rem;
+  }
+
+  .contact-page__shutters {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .contact-page__shutter:nth-child(n + 6) {
+    display: none;
+  }
+
+  .contact-page__shutter:nth-child(1) { margin-top: 56%; }
+  .contact-page__shutter:nth-child(2) { margin-top: 42%; }
+  .contact-page__shutter:nth-child(3) { margin-top: 28%; }
+  .contact-page__shutter:nth-child(4) { margin-top: 14%; }
+  .contact-page__shutter:nth-child(5) { margin-top: 0%; }
 }
