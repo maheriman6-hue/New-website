@@ -453,30 +453,6 @@ const INTRO_DURATION = 2200;
 const SLIDE_DURATION = 6000;
 const TOTAL_STRIPS = 10;
 const LITE_STRIPS = 6;
-const stripIndices = {
-    10: Array.from({
-        length: TOTAL_STRIPS
-    }, (_, index)=>index),
-    6: Array.from({
-        length: LITE_STRIPS
-    }, (_, index)=>index)
-};
-const stripStyles = {
-    10: Array.from({
-        length: TOTAL_STRIPS
-    }, (_, index)=>({
-            left: `${index * 10}%`,
-            width: '10%',
-            animationDelay: `${(STRIP_SPAN - STRIP_DURATION) / (TOTAL_STRIPS - 1) * index}ms`
-        })),
-    6: Array.from({
-        length: LITE_STRIPS
-    }, (_, index)=>({
-            left: `${index * 100 / LITE_STRIPS}%`,
-            width: `${100 / LITE_STRIPS}%`,
-            animationDelay: `${(STRIP_SPAN - STRIP_DURATION) / (LITE_STRIPS - 1) * index}ms`
-        }))
-};
 const introProgressStyle = {
     '--progress-duration': `${INTRO_DURATION}ms`
 };
@@ -484,8 +460,19 @@ const slideProgressStyle = {
     '--progress-duration': `${SLIDE_DURATION}ms`
 };
 const decodedImages = new Map();
+const MASK_STRIP_INDICES = {
+    10: Array.from({
+        length: TOTAL_STRIPS
+    }, (_, index)=>index),
+    6: Array.from({
+        length: LITE_STRIPS
+    }, (_, index)=>index)
+};
 function formatSlideNumber(index) {
     return String(index).padStart(2, '0');
+}
+function formatAnimationDelay(index, count) {
+    return `${(STRIP_SPAN - STRIP_DURATION) / (count - 1) * index}ms`;
 }
 function preloadAndDecode(slide) {
     const src = slide.image;
@@ -505,51 +492,49 @@ function preloadAndDecode(slide) {
     request.catch(()=>decodedImages.delete(src));
     return request;
 }
-const SlideMedia = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["memo"])(function SlideMedia({ slide, priority = false, isStrip = false }) {
+const SlideMedia = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["memo"])(function SlideMedia({ slide, priority = false }) {
     if (slide.image) {
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-            className: isStrip ? 'home-hero__slide-media home-hero__slide-media--strip' : 'home-hero__slide-media',
-            "data-strip-media": isStrip ? '' : undefined,
+            className: "home-hero__slide-media",
             children: [
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$image$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                     className: "home-hero__image",
                     src: slide.image,
-                    alt: isStrip ? '' : slide.alt ?? '',
+                    alt: slide.alt ?? '',
                     fill: true,
                     sizes: "100vw",
                     unoptimized: true,
-                    loading: priority || isStrip ? 'eager' : 'lazy',
+                    loading: priority ? 'eager' : 'lazy',
                     priority: priority
                 }, void 0, false, {
                     fileName: "[project]/components/HomeHeroSlider.tsx",
-                    lineNumber: 130,
+                    lineNumber: 116,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "home-hero__media-shade"
                 }, void 0, false, {
                     fileName: "[project]/components/HomeHeroSlider.tsx",
-                    lineNumber: 140,
+                    lineNumber: 126,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/HomeHeroSlider.tsx",
-            lineNumber: 126,
+            lineNumber: 115,
             columnNumber: 7
         }, this);
     }
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: isStrip ? 'home-hero__intro home-hero__intro--strip' : 'home-hero__intro',
+        className: "home-hero__intro",
         "aria-hidden": "true",
-        "data-strip-media": isStrip ? '' : undefined,
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "home-hero__intro-name",
                 children: "Ines"
             }, void 0, false, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 151,
+                lineNumber: 133,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -557,41 +542,20 @@ const SlideMedia = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$
                 children: "VARGA"
             }, void 0, false, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 152,
+                lineNumber: 134,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/HomeHeroSlider.tsx",
-        lineNumber: 146,
+        lineNumber: 132,
         columnNumber: 5
     }, this);
 });
 _c = SlideMedia;
-const MediaStrip = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["memo"])(function MediaStrip({ slide, index, count }) {
-    return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-        className: "home-hero__strip",
-        "data-strip-index": index,
-        "data-strip-count": count,
-        "aria-hidden": "true",
-        style: stripStyles[count][index],
-        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(SlideMedia, {
-            slide: slide,
-            isStrip: true
-        }, void 0, false, {
-            fileName: "[project]/components/HomeHeroSlider.tsx",
-            lineNumber: 174,
-            columnNumber: 7
-        }, this)
-    }, void 0, false, {
-        fileName: "[project]/components/HomeHeroSlider.tsx",
-        lineNumber: 167,
-        columnNumber: 5
-    }, this);
-});
-_c1 = MediaStrip;
 function HomeHeroSlider() {
     _s();
+    const maskId = `hero-strip-mask-${(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useId"])().replaceAll(':', '')}`;
     const stageRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     const timerRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     const pointerStartRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
@@ -600,10 +564,6 @@ function HomeHeroSlider() {
     const moveToRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])({
         "HomeHeroSlider.useRef[moveToRef]": async ()=>{}
     }["HomeHeroSlider.useRef[moveToRef]"]);
-    const stageSizeRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])({
-        width: 0,
-        height: 0
-    });
     const [activeIndex, setActiveIndex] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
     const [settledIndex, setSettledIndex] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(0);
     const [transitionIndex, setTransitionIndex] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
@@ -705,19 +665,8 @@ function HomeHeroSlider() {
             const resizeObserver = new ResizeObserver({
                 "HomeHeroSlider.useEffect": ([entry])=>{
                     const { width, height } = entry.contentRect;
-                    stageSizeRef.current = {
-                        width,
-                        height
-                    };
                     stage.style.setProperty('--stage-w', `${width}px`);
                     stage.style.setProperty('--stage-h', `${height}px`);
-                    stage.querySelectorAll('[data-strip-index]').forEach({
-                        "HomeHeroSlider.useEffect": (strip)=>{
-                            const index = Number(strip.dataset.stripIndex);
-                            const count = Number(strip.dataset.stripCount);
-                            strip.querySelector('[data-strip-media]')?.style.setProperty('--strip-offset-x', `${-(width * index) / count}px`);
-                        }
-                    }["HomeHeroSlider.useEffect"]);
                 }
             }["HomeHeroSlider.useEffect"]);
             resizeObserver.observe(stage);
@@ -760,23 +709,6 @@ function HomeHeroSlider() {
         moveTo,
         updateTransitionState
     ]);
-    (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useLayoutEffect"])({
-        "HomeHeroSlider.useLayoutEffect": ()=>{
-            if (transitionIndex === null) return;
-            const stage = stageRef.current;
-            if (!stage) return;
-            stage.querySelectorAll('[data-strip-index]').forEach({
-                "HomeHeroSlider.useLayoutEffect": (strip)=>{
-                    const index = Number(strip.dataset.stripIndex);
-                    const count = Number(strip.dataset.stripCount);
-                    strip.querySelector('[data-strip-media]')?.style.setProperty('--strip-offset-x', `${-(stageSizeRef.current.width * index) / count}px`);
-                }
-            }["HomeHeroSlider.useLayoutEffect"]);
-        }
-    }["HomeHeroSlider.useLayoutEffect"], [
-        transitionIndex,
-        transitionStripCount
-    ]);
     const activeSlide = slides[activeIndex];
     const settledSlide = slides[settledIndex];
     const isIntro = activeIndex === 0;
@@ -815,29 +747,94 @@ function HomeHeroSlider() {
                     priority: settledIndex === 1
                 }, void 0, false, {
                     fileName: "[project]/components/HomeHeroSlider.tsx",
-                    lineNumber: 358,
+                    lineNumber: 293,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 357,
+                lineNumber: 292,
                 columnNumber: 7
             }, this),
-            incomingSlide && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "home-hero__strips",
-                "aria-hidden": "true",
-                children: stripIndices[transitionStripCount].map((index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(MediaStrip, {
-                        slide: incomingSlide,
-                        index: index,
-                        count: transitionStripCount
-                    }, `${transitionIndex}-${index}`, false, {
+            incomingSlide && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
+                        className: "home-hero__mask-defs",
+                        "aria-hidden": "true",
+                        focusable: "false",
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("defs", {
+                            children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("mask", {
+                                id: maskId,
+                                x: "0",
+                                y: "0",
+                                width: "1",
+                                height: "1",
+                                maskUnits: "objectBoundingBox",
+                                maskContentUnits: "objectBoundingBox",
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("rect", {
+                                        width: "1",
+                                        height: "1",
+                                        fill: "black"
+                                    }, void 0, false, {
+                                        fileName: "[project]/components/HomeHeroSlider.tsx",
+                                        lineNumber: 301,
+                                        columnNumber: 17
+                                    }, this),
+                                    MASK_STRIP_INDICES[transitionStripCount].map((index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("rect", {
+                                            className: "home-hero__wipe-rect",
+                                            x: index / transitionStripCount,
+                                            y: "0",
+                                            width: 1 / transitionStripCount,
+                                            height: "1",
+                                            fill: "white",
+                                            style: {
+                                                animationDelay: formatAnimationDelay(index, transitionStripCount)
+                                            }
+                                        }, index, false, {
+                                            fileName: "[project]/components/HomeHeroSlider.tsx",
+                                            lineNumber: 303,
+                                            columnNumber: 19
+                                        }, this))
+                                ]
+                            }, void 0, true, {
+                                fileName: "[project]/components/HomeHeroSlider.tsx",
+                                lineNumber: 300,
+                                columnNumber: 15
+                            }, this)
+                        }, void 0, false, {
+                            fileName: "[project]/components/HomeHeroSlider.tsx",
+                            lineNumber: 299,
+                            columnNumber: 13
+                        }, this)
+                    }, void 0, false, {
                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                        lineNumber: 368,
-                        columnNumber: 13
-                    }, this))
-            }, transitionIndex, false, {
+                        lineNumber: 298,
+                        columnNumber: 11
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        className: "home-hero__incoming-media",
+                        style: {
+                            maskImage: `url(#${maskId})`,
+                            WebkitMaskImage: `url(#${maskId})`
+                        },
+                        "aria-hidden": "true",
+                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(SlideMedia, {
+                            slide: incomingSlide,
+                            priority: true
+                        }, void 0, false, {
+                            fileName: "[project]/components/HomeHeroSlider.tsx",
+                            lineNumber: 326,
+                            columnNumber: 13
+                        }, this)
+                    }, transitionIndex, false, {
+                        fileName: "[project]/components/HomeHeroSlider.tsx",
+                        lineNumber: 317,
+                        columnNumber: 11
+                    }, this)
+                ]
+            }, void 0, true, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 362,
+                lineNumber: 297,
                 columnNumber: 9
             }, this),
             isIntro && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -849,14 +846,14 @@ function HomeHeroSlider() {
                             "PHOTOGRAPHER & DIRECTOR",
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 380,
+                                lineNumber: 333,
                                 columnNumber: 41
                             }, this),
                             "LISBON — NEW YORK"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                        lineNumber: 380,
+                        lineNumber: 333,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -864,20 +861,20 @@ function HomeHeroSlider() {
                             "SELECTED WORK 2019–26",
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 381,
+                                lineNumber: 334,
                                 columnNumber: 35
                             }, this),
                             "↓ 05 STORIES"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                        lineNumber: 381,
+                        lineNumber: 334,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 379,
+                lineNumber: 332,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -896,13 +893,13 @@ function HomeHeroSlider() {
                                         children: "/ 05"
                                     }, void 0, false, {
                                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                                        lineNumber: 388,
+                                        lineNumber: 341,
                                         columnNumber: 46
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 387,
+                                lineNumber: 340,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -913,7 +910,7 @@ function HomeHeroSlider() {
                                 children: activeSlide.title
                             }, void 0, false, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 390,
+                                lineNumber: 343,
                                 columnNumber: 11
                             }, this),
                             !isIntro && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -925,7 +922,7 @@ function HomeHeroSlider() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 394,
+                                lineNumber: 347,
                                 columnNumber: 13
                             }, this),
                             isIntro && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -933,13 +930,13 @@ function HomeHeroSlider() {
                                 children: "DRAG OR SWIPE TO TURN"
                             }, void 0, false, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 398,
+                                lineNumber: 351,
                                 columnNumber: 23
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                        lineNumber: 386,
+                        lineNumber: 339,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -962,38 +959,41 @@ function HomeHeroSlider() {
                                     style: index === 0 ? introProgressStyle : slideProgressStyle
                                 }, `${activeIndex}-${progressRun}`, false, {
                                     fileName: "[project]/components/HomeHeroSlider.tsx",
-                                    lineNumber: 411,
+                                    lineNumber: 364,
                                     columnNumber: 15
                                 }, this)
                             }, slide.title, false, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 403,
+                                lineNumber: 356,
                                 columnNumber: 13
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                        lineNumber: 401,
+                        lineNumber: 354,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 385,
+                lineNumber: 338,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/HomeHeroSlider.tsx",
-        lineNumber: 349,
+        lineNumber: 284,
         columnNumber: 5
     }, this);
 }
-_s(HomeHeroSlider, "CqNTWN9rxkoelQiRK4vXsG9PFbo=");
-_c2 = HomeHeroSlider;
-var _c, _c1, _c2;
+_s(HomeHeroSlider, "lUmXc4fovrVq/Jx3kKm8nH43n5k=", false, function() {
+    return [
+        __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useId"]
+    ];
+});
+_c1 = HomeHeroSlider;
+var _c, _c1;
 __turbopack_context__.k.register(_c, "SlideMedia");
-__turbopack_context__.k.register(_c1, "MediaStrip");
-__turbopack_context__.k.register(_c2, "HomeHeroSlider");
+__turbopack_context__.k.register(_c1, "HomeHeroSlider");
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }

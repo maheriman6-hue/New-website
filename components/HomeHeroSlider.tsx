@@ -5,7 +5,7 @@ import {
   memo,
   useCallback,
   useEffect,
-  useLayoutEffect,
+  useId,
   useRef,
   useState,
   type CSSProperties,
@@ -64,30 +64,20 @@ const SLIDE_DURATION = 6000;
 const TOTAL_STRIPS = 10;
 const LITE_STRIPS = 6;
 
-const stripIndices: Record<6 | 10, number[]> = {
-  10: Array.from({ length: TOTAL_STRIPS }, (_, index) => index),
-  6: Array.from({ length: LITE_STRIPS }, (_, index) => index),
-};
-
-const stripStyles: Record<6 | 10, CSSProperties[]> = {
-  10: Array.from({ length: TOTAL_STRIPS }, (_, index) => ({
-    left: `${index * 10}%`,
-    width: '10%',
-    animationDelay: `${(STRIP_SPAN - STRIP_DURATION) / (TOTAL_STRIPS - 1) * index}ms`,
-  })),
-  6: Array.from({ length: LITE_STRIPS }, (_, index) => ({
-    left: `${(index * 100) / LITE_STRIPS}%`,
-    width: `${100 / LITE_STRIPS}%`,
-    animationDelay: `${(STRIP_SPAN - STRIP_DURATION) / (LITE_STRIPS - 1) * index}ms`,
-  })),
-};
-
 const introProgressStyle = { '--progress-duration': `${INTRO_DURATION}ms` } as CSSProperties;
 const slideProgressStyle = { '--progress-duration': `${SLIDE_DURATION}ms` } as CSSProperties;
 const decodedImages = new Map<string, Promise<void>>();
+const MASK_STRIP_INDICES = {
+  10: Array.from({ length: TOTAL_STRIPS }, (_, index) => index),
+  6: Array.from({ length: LITE_STRIPS }, (_, index) => index),
+} satisfies Record<6 | 10, number[]>;
 
 function formatSlideNumber(index: number) {
   return String(index).padStart(2, '0');
+}
+
+function formatAnimationDelay(index: number, count: 6 | 10) {
+  return `${((STRIP_SPAN - STRIP_DURATION) / (count - 1)) * index}ms`;
 }
 
 function preloadAndDecode(slide: Slide) {
@@ -115,26 +105,21 @@ function preloadAndDecode(slide: Slide) {
 const SlideMedia = memo(function SlideMedia({
   slide,
   priority = false,
-  isStrip = false,
 }: {
   slide: Slide;
   priority?: boolean;
-  isStrip?: boolean;
 }) {
   if (slide.image) {
     return (
-      <div
-        className={isStrip ? 'home-hero__slide-media home-hero__slide-media--strip' : 'home-hero__slide-media'}
-        data-strip-media={isStrip ? '' : undefined}
-      >
+      <div className="home-hero__slide-media">
         <Image
           className="home-hero__image"
           src={slide.image}
-          alt={isStrip ? '' : slide.alt ?? ''}
+          alt={slide.alt ?? ''}
           fill
           sizes="100vw"
           unoptimized
-          loading={priority || isStrip ? 'eager' : 'lazy'}
+          loading={priority ? 'eager' : 'lazy'}
           priority={priority}
         />
         <div className="home-hero__media-shade" />
@@ -143,47 +128,21 @@ const SlideMedia = memo(function SlideMedia({
   }
 
   return (
-    <div
-      className={isStrip ? 'home-hero__intro home-hero__intro--strip' : 'home-hero__intro'}
-      aria-hidden="true"
-      data-strip-media={isStrip ? '' : undefined}
-    >
+    <div className="home-hero__intro" aria-hidden="true">
       <div className="home-hero__intro-name">Ines</div>
       <div className="home-hero__intro-wordmark">VARGA</div>
     </div>
   );
 });
 
-const MediaStrip = memo(function MediaStrip({
-  slide,
-  index,
-  count,
-}: {
-  slide: Slide;
-  index: number;
-  count: 6 | 10;
-}) {
-  return (
-    <div
-      className="home-hero__strip"
-      data-strip-index={index}
-      data-strip-count={count}
-      aria-hidden="true"
-      style={stripStyles[count][index]}
-    >
-      <SlideMedia slide={slide} isStrip />
-    </div>
-  );
-});
-
 export function HomeHeroSlider() {
+  const maskId = `hero-strip-mask-${useId().replaceAll(':', '')}`;
   const stageRef = useRef<HTMLElement | null>(null);
   const timerRef = useRef<number | null>(null);
   const pointerStartRef = useRef<number | null>(null);
   const isTransitioningRef = useRef(false);
   const activeIndexRef = useRef(0);
   const moveToRef = useRef<(index: number) => Promise<void>>(async () => {});
-  const stageSizeRef = useRef({ width: 0, height: 0 });
   const [activeIndex, setActiveIndex] = useState(0);
   const [settledIndex, setSettledIndex] = useState(0);
   const [transitionIndex, setTransitionIndex] = useState<number | null>(null);
@@ -274,18 +233,8 @@ export function HomeHeroSlider() {
 
     const resizeObserver = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
-      stageSizeRef.current = { width, height };
       stage.style.setProperty('--stage-w', `${width}px`);
       stage.style.setProperty('--stage-h', `${height}px`);
-
-      stage.querySelectorAll<HTMLElement>('[data-strip-index]').forEach((strip) => {
-        const index = Number(strip.dataset.stripIndex);
-        const count = Number(strip.dataset.stripCount);
-        strip.querySelector<HTMLElement>('[data-strip-media]')?.style.setProperty(
-          '--strip-offset-x',
-          `${-(width * index) / count}px`,
-        );
-      });
     });
 
     resizeObserver.observe(stage);
@@ -311,21 +260,6 @@ export function HomeHeroSlider() {
       updateTransitionState(false);
     };
   }, [clearTimer, moveTo, updateTransitionState]);
-
-  useLayoutEffect(() => {
-    if (transitionIndex === null) return;
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    stage.querySelectorAll<HTMLElement>('[data-strip-index]').forEach((strip) => {
-      const index = Number(strip.dataset.stripIndex);
-      const count = Number(strip.dataset.stripCount);
-      strip.querySelector<HTMLElement>('[data-strip-media]')?.style.setProperty(
-        '--strip-offset-x',
-        `${-(stageSizeRef.current.width * index) / count}px`,
-      );
-    });
-  }, [transitionIndex, transitionStripCount]);
 
   const activeSlide = slides[activeIndex];
   const settledSlide = slides[settledIndex];
@@ -359,20 +293,38 @@ export function HomeHeroSlider() {
       </div>
 
       {incomingSlide && (
-        <div
-          key={transitionIndex}
-          className="home-hero__strips"
-          aria-hidden="true"
-        >
-          {stripIndices[transitionStripCount].map((index) => (
-            <MediaStrip
-              key={`${transitionIndex}-${index}`}
-              slide={incomingSlide}
-              index={index}
-              count={transitionStripCount}
-            />
-          ))}
-        </div>
+        <>
+          <svg className="home-hero__mask-defs" aria-hidden="true" focusable="false">
+            <defs>
+              <mask id={maskId} x="0" y="0" width="1" height="1" maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox">
+                <rect width="1" height="1" fill="black" />
+                {MASK_STRIP_INDICES[transitionStripCount].map((index) => (
+                  <rect
+                    key={index}
+                    className="home-hero__wipe-rect"
+                    x={index / transitionStripCount}
+                    y="0"
+                    width={1 / transitionStripCount}
+                    height="1"
+                    fill="white"
+                    style={{ animationDelay: formatAnimationDelay(index, transitionStripCount) }}
+                  />
+                ))}
+              </mask>
+            </defs>
+          </svg>
+          <div
+            key={transitionIndex}
+            className="home-hero__incoming-media"
+            style={{
+              maskImage: `url(#${maskId})`,
+              WebkitMaskImage: `url(#${maskId})`,
+            }}
+            aria-hidden="true"
+          >
+            <SlideMedia slide={incomingSlide} priority />
+          </div>
+        </>
       )}
 
       {isIntro && (
