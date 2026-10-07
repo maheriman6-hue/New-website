@@ -41,7 +41,7 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f2eee6]">
       <header className={[
-        'z-30 flex items-start justify-between px-4 pt-4 sm:px-6 lg:px-7',
+        'site-header z-30 flex items-start justify-between px-4 pt-4 sm:px-6 lg:px-7',
         overlayHeader ? 'absolute inset-x-0 top-0' : 'relative',
         pathname === '/contact' ? 'contact-header' : '',
       ].join(' ')}>

@@ -71,7 +71,10 @@ export function RouteTransition() {
         <div className="route-transition__red" />
         <div className="route-transition__black" />
         <div className="route-transition__bar" />
-        <div className="route-transition__wordmark">VARGA</div>
+        <div className="route-transition__wordmark">
+          <span className="route-transition__name">ZATEEF</span>
+          <span className="route-transition__descriptor">INTERNATIONAL</span>
+        </div>
       </div>
     </div>
   );

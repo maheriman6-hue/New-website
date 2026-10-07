@@ -63,6 +63,7 @@ const SLIDE_DURATION = 2000;
 const INTRO_DURATION = SLIDE_DURATION;
 const TOTAL_STRIPS = 10;
 const LITE_STRIPS = 6;
+const IMAGE_PRELOAD_ATTEMPTS = 3;
 
 const introProgressStyle = { '--progress-duration': `${INTRO_DURATION}ms` } as CSSProperties;
 const slideProgressStyle = { '--progress-duration': `${SLIDE_DURATION}ms` } as CSSProperties;
@@ -80,6 +81,29 @@ function formatAnimationDelay(index: number, count: 6 | 10) {
   return `${((STRIP_SPAN - STRIP_DURATION) / (count - 1)) * index}ms`;
 }
 
+async function loadAndDecodeImage(src: string, attempt = 1): Promise<void> {
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const preloadedImage = new window.Image();
+      preloadedImage.decoding = 'async';
+      preloadedImage.onload = () => resolve(preloadedImage);
+      preloadedImage.onerror = () => reject(new Error(`Could not load hero image: ${src}`));
+      preloadedImage.src = src;
+    });
+
+    await image.decode();
+  } catch (error) {
+    if (attempt >= IMAGE_PRELOAD_ATTEMPTS) {
+      throw new Error(`Could not preload hero image after ${attempt} attempts: ${src}`, { cause: error });
+    }
+
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, attempt * 300);
+    });
+    return loadAndDecodeImage(src, attempt + 1);
+  }
+}
+
 function preloadAndDecode(slide: Slide) {
   const src = slide.image;
   if (!src) return Promise.resolve();
@@ -87,15 +111,7 @@ function preloadAndDecode(slide: Slide) {
   const cached = decodedImages.get(src);
   if (cached) return cached;
 
-  const request = new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new window.Image();
-    image.decoding = 'async';
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`Could not preload hero image: ${src}`));
-    image.src = src;
-  }).then(async (image) => {
-    await image.decode();
-  });
+  const request = loadAndDecodeImage(src);
 
   decodedImages.set(src, request);
   request.catch(() => decodedImages.delete(src));
@@ -129,8 +145,8 @@ const SlideMedia = memo(function SlideMedia({
 
   return (
     <div className="home-hero__intro" aria-hidden="true">
-      <div className="home-hero__intro-name">Ines</div>
-      <div className="home-hero__intro-wordmark">VARGA</div>
+      <div className="home-hero__intro-name">Zateef</div>
+      <div className="home-hero__intro-wordmark">International</div>
     </div>
   );
 });
