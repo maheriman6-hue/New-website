@@ -347,31 +347,6 @@ function AppShell({ children, heroTone = 'dark', overlayHeader = false }) {
                         fileName: "[project]/components/AppShell.tsx",
                         lineNumber: 127,
                         columnNumber: 9
-                    }, this),
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "flex justify-end pr-2",
-                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                            className: "flex items-center gap-2 rounded-full border border-[#f2eee6] bg-[#f2eee6] px-4 py-2 text-[12px] text-[#0a0a0a] shadow-soft",
-                            children: [
-                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                    className: "inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#0a0a0a] text-[10px]",
-                                    children: "↗"
-                                }, void 0, false, {
-                                    fileName: "[project]/components/AppShell.tsx",
-                                    lineNumber: 135,
-                                    columnNumber: 13
-                                }, this),
-                                "Made in Framer"
-                            ]
-                        }, void 0, true, {
-                            fileName: "[project]/components/AppShell.tsx",
-                            lineNumber: 132,
-                            columnNumber: 11
-                        }, this)
-                    }, void 0, false, {
-                        fileName: "[project]/components/AppShell.tsx",
-                        lineNumber: 131,
-                        columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {

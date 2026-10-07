@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -45,9 +46,14 @@ export function AppShell({
         overlayHeader ? 'absolute inset-x-0 top-0' : 'relative',
         pathname === '/contact' ? 'contact-header' : '',
       ].join(' ')}>
-        <Link href="/" className="brand-pill">
-          <span className="font-display text-[2rem] leading-none tracking-[-0.08em] font-black uppercase">VARGA</span>
-          <span className="font-serif italic text-[1.2rem] leading-none tracking-[-0.04em] ml-2">ines</span>
+        <Link href="/" className="brand-pill" aria-label="Zateef International home">
+          <Image
+            src="/images/zateef-z-logo.png"
+            alt=""
+            width={26}
+            height={32}
+            priority
+          />
         </Link>
 
         <nav
@@ -128,14 +134,6 @@ export function AppShell({
           VARGA
         </div>
 
-        <div className="flex justify-end pr-2">
-          <button
-            className="flex items-center gap-2 rounded-full border border-[#f2eee6] bg-[#f2eee6] px-4 py-2 text-[12px] text-[#0a0a0a] shadow-soft"
-          >
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#0a0a0a] text-[10px]">↗</span>
-            Made in Framer
-          </button>
-        </div>
       </footer>
     </div>
   );

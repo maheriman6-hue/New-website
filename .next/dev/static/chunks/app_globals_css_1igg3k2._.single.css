@@ -354,10 +354,6 @@ img, video {
   display: flex;
 }
 
-.inline-flex {
-  display: inline-flex;
-}
-
 .table {
   display: table;
 }
@@ -368,10 +364,6 @@ img, video {
 
 .h-2\.5 {
   height: .625rem;
-}
-
-.h-6 {
-  height: 1.5rem;
 }
 
 .h-\[1px\] {
@@ -388,10 +380,6 @@ img, video {
 
 .w-2\.5 {
   width: .625rem;
-}
-
-.w-6 {
-  width: 1.5rem;
 }
 
 .min-w-\[180px\] {
@@ -416,10 +404,6 @@ img, video {
 
 .items-center {
   align-items: center;
-}
-
-.justify-end {
-  justify-content: flex-end;
 }
 
 .justify-center {
@@ -470,19 +454,9 @@ img, video {
   border-top-width: 1px;
 }
 
-.border-\[\#0a0a0a\] {
-  --tw-border-opacity: 1;
-  border-color: rgb(10 10 10 / var(--tw-border-opacity, 1));
-}
-
 .border-\[\#e8261a\] {
   --tw-border-opacity: 1;
   border-color: rgb(232 38 26 / var(--tw-border-opacity, 1));
-}
-
-.border-\[\#f2eee6\] {
-  --tw-border-opacity: 1;
-  border-color: rgb(242 238 230 / var(--tw-border-opacity, 1));
 }
 
 .border-black\/10 {
@@ -547,10 +521,6 @@ img, video {
 
 .pb-8 {
   padding-bottom: 2rem;
-}
-
-.pr-2 {
-  padding-right: .5rem;
 }
 
 .pt-4 {
@@ -796,7 +766,8 @@ button, input, textarea, select {
 .brand-pill {
   color: #0a0a0a;
   background: #f2eee6fa;
-  padding: 0 1rem;
+  justify-content: center;
+  padding: 0 .65rem;
 }
 
 .availability-pill {

@@ -36,12 +36,6 @@ export function Footer() {
         VARGA
       </div>
 
-      <div className="flex justify-end pr-2">
-        <button className="flex items-center gap-2 rounded-full border border-[#f2eee6] bg-[#f2eee6] px-4 py-2 text-[12px] text-[#0a0a0a] shadow-soft">
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#0a0a0a] text-[10px]">↗</span>
-          Made in Framer
-        </button>
-      </div>
     </footer>
   );
 }
