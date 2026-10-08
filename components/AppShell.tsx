@@ -42,8 +42,8 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#f2eee6]">
       <header className={[
-        'site-header z-30 flex items-start justify-between px-4 pt-4 sm:px-6 lg:px-7',
-        overlayHeader ? 'absolute inset-x-0 top-0' : 'relative',
+        'site-header sticky top-0 z-30 flex items-start justify-between px-4 pt-4 sm:px-6 lg:px-7',
+        overlayHeader ? 'site-header--overlay' : '',
         pathname === '/contact' ? 'contact-header' : '',
       ].join(' ')}>
         <Link href="/" className="brand-pill" aria-label="Zateef International home">

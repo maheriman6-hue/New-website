@@ -280,9 +280,8 @@ img, video {
   position: relative;
 }
 
-.inset-x-0 {
-  left: 0;
-  right: 0;
+.sticky {
+  position: sticky;
 }
 
 .inset-x-1 {
@@ -788,6 +787,10 @@ button, input, textarea, select {
   top: 1rem;
   left: 50%;
   transform: translateX(-50%);
+}
+
+.site-header--overlay {
+  margin-bottom: -56px;
 }
 
 :root[data-hero-transition="true"] .app-nav-pill, :root[data-perf="lite"] .app-nav-pill {
@@ -2240,6 +2243,10 @@ button, input, textarea, select {
     display: grid;
   }
 
+  .site-header--overlay {
+    margin-bottom: -5.75rem;
+  }
+
   .site-header .brand-pill {
     grid-area: 1 / 1;
     justify-self: start;
@@ -2259,18 +2266,17 @@ button, input, textarea, select {
   }
 
   .site-header .app-nav-pill {
-    grid-area: 2 / 1 / auto / -1;
-    justify-self: center;
-    gap: .1rem;
+    gap: 0;
     margin: 0;
-    padding: .25rem .4rem;
-    position: static;
-    transform: none;
+    padding: .3rem .4rem;
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .site-header .app-nav-pill a {
-    padding-left: .6rem;
-    padding-right: .6rem;
+    padding: .3rem .55rem;
     font-size: 13px;
   }
 
@@ -2927,8 +2933,6 @@ button, input, textarea, select {
 
 .contact-header {
   z-index: 30;
-  position: absolute;
-  inset: 0 0 auto;
 }
 
 .contact-header .app-nav-pill {

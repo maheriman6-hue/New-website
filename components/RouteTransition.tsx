@@ -5,12 +5,23 @@ import { useEffect, useRef, useState } from 'react';
 
 export function RouteTransition() {
   const router = useRouter();
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [run, setRun] = useState(0);
   const timers = useRef<number[]>([]);
-  const isTransitioning = useRef(false);
+  const isTransitioning = useRef(true);
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setIsVisible(false);
+      isTransitioning.current = false;
+    } else {
+      timers.current.push(window.setTimeout(() => {
+        setIsVisible(false);
+        isTransitioning.current = false;
+        timers.current = [];
+      }, 2300));
+    }
+
     const onClick = (event: MouseEvent) => {
       if (
         event.defaultPrevented ||

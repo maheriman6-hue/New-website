@@ -105,6 +105,10 @@ select {
   transform: translateX(-50%);
 }
 
+.site-header--overlay {
+  margin-bottom: -56px;
+}
+
 :root[data-hero-transition='true'] .app-nav-pill,
 :root[data-perf='lite'] .app-nav-pill {
   background: rgba(22, 22, 22, 0.9);
@@ -1512,6 +1516,10 @@ select {
     gap: 0.5rem;
   }
 
+  .site-header--overlay {
+    margin-bottom: -5.75rem;
+  }
+
   .site-header .brand-pill {
     grid-column: 1;
     grid-row: 1;
@@ -1533,19 +1541,17 @@ select {
   }
 
   .site-header .app-nav-pill {
-    position: static;
-    grid-column: 1 / -1;
-    grid-row: 2;
-    justify-self: center;
-    transform: none;
-    gap: 0.1rem;
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    gap: 0;
     margin: 0;
-    padding: 0.25rem 0.4rem;
+    padding: 0.3rem 0.4rem;
+    transform: translateX(-50%);
   }
 
   .site-header .app-nav-pill a {
-    padding-right: 0.6rem;
-    padding-left: 0.6rem;
+    padding: 0.3rem 0.55rem;
     font-size: 13px;
   }
 
@@ -2163,8 +2169,6 @@ select {
 }
 
 .contact-header {
-  position: absolute;
-  inset: 0 0 auto;
   z-index: 30;
 }
 
