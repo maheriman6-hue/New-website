@@ -97,6 +97,14 @@ select {
   isolation: isolate;
 }
 
+.site-header .app-nav-pill {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  margin: 0;
+  transform: translateX(-50%);
+}
+
 :root[data-hero-transition='true'] .app-nav-pill,
 :root[data-perf='lite'] .app-nav-pill {
   background: rgba(22, 22, 22, 0.9);
@@ -1525,9 +1533,11 @@ select {
   }
 
   .site-header .app-nav-pill {
+    position: static;
     grid-column: 1 / -1;
     grid-row: 2;
     justify-self: center;
+    transform: none;
     gap: 0.1rem;
     margin: 0;
     padding: 0.25rem 0.4rem;

@@ -1,0 +1,25 @@
+1:"$Sreact.fragment"
+2:I[30593,["/_next/static/chunks/0kdusmsj2qoex.js","/_next/static/chunks/27zurzz0uw6b7.js","/_next/static/chunks/101i6f-eyr4nx.js","/_next/static/chunks/0ya3ea0m_mklb.js"],"ContactExperience"]
+3:I[97367,["/_next/static/chunks/0kdusmsj2qoex.js","/_next/static/chunks/27zurzz0uw6b7.js"],"OutletBoundary"]
+4:"$Sreact.suspense"
+8:I[97367,["/_next/static/chunks/0kdusmsj2qoex.js","/_next/static/chunks/27zurzz0uw6b7.js"],"ViewportBoundary"]
+9:I[97367,["/_next/static/chunks/0kdusmsj2qoex.js","/_next/static/chunks/27zurzz0uw6b7.js"],"MetadataBoundary"]
+b:I[39756,["/_next/static/chunks/0kdusmsj2qoex.js","/_next/static/chunks/27zurzz0uw6b7.js"],"default"]
+c:I[37457,["/_next/static/chunks/0kdusmsj2qoex.js","/_next/static/chunks/27zurzz0uw6b7.js"],"default"]
+f:I[35187,["/_next/static/chunks/0kdusmsj2qoex.js","/_next/static/chunks/27zurzz0uw6b7.js"],"PerformanceRuntime"]
+10:I[20037,["/_next/static/chunks/0kdusmsj2qoex.js","/_next/static/chunks/27zurzz0uw6b7.js"],"RouteTransition"]
+11:I[22016,["/_next/static/chunks/0kdusmsj2qoex.js","/_next/static/chunks/27zurzz0uw6b7.js","/_next/static/chunks/0axdrs6tow-4n.js"],""]
+:HL["/_next/static/chunks/41d8dgmiu119f.css","style"]
+7:X
+e:X
+e:C
+0:{"buildId":"TLNvXFBn2f2Yh1Pc_Tw1A","data":[{"rsc":["$","$1","c",{"children":[["$","$L2",null,{}],[["$","script","script-0",{"src":"/_next/static/chunks/101i6f-eyr4nx.js","async":true}],["$","script","script-1",{"src":"/_next/static/chunks/0ya3ea0m_mklb.js","async":true}]],["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":"$@6","staleTime":"$7","varyParams":null},{"rsc":["$","$1","h",{"children":[null,["$","$L8",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L9",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Varga"}],["$","meta","1",{"name":"description","content":"Creative portfolio foundation"}]]}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"isPartial":"$@a","staleTime":"$7","varyParams":null},{"rsc":["$","$1","c",{"children":[null,["$","$Lb",null,{"parallelRouterKey":"children","template":["$","$Lc",null,{}]}]]}],"isPartial":"$@d","staleTime":"$7","varyParams":"$e"},{"rsc":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/chunks/41d8dgmiu119f.css","precedence":"next"}],["$","script","script-0",{"src":"/_next/static/chunks/0kdusmsj2qoex.js","async":true}],["$","script","script-1",{"src":"/_next/static/chunks/27zurzz0uw6b7.js","async":true}]],["$","html",null,{"lang":"en","data-scroll-behavior":"smooth","children":["$","body",null,{"className":"bebas_neue_7080f19f-module__Ectw4q__variable cormorant_garamond_9aeb0ec3-module__8AN3OW__variable ibm_plex_mono_f85d390f-module__ueW4eq__variable inter_7cd6e3d3-module__hTMt2G__variable","children":[["$","$Lf",null,{}],["$","$L10",null,{}],["$","$Lb",null,{"parallelRouterKey":"children","template":["$","$Lc",null,{}],"notFound":[["$","div",null,{"className":"flex min-h-screen items-center justify-center bg-[#0a0a0a] text-[#f2eee6]","children":["$","div",null,{"className":"text-center","children":[["$","div",null,{"className":"font-display text-[6rem] uppercase tracking-[-0.08em]","children":"404"}],["$","$L11",null,{"href":"/","className":"mt-4 inline-block rounded-full bg-[#f2eee6] px-5 py-2 text-[12px] uppercase tracking-[0.12em] text-[#0a0a0a]","children":"Go home"}]]}]}],[]]}]]}]}]]}],"isPartial":"$@12","staleTime":"$7","varyParams":null}],"isUpgradeableISRFallback":false,"a":"$@13","rootVaryParams":null,"needsRuntimeRequest":"$@14"}
+5:null
+7:300
+14:true
+7:C
+13:0
+a:"$undefined"
+d:"$undefined"
+12:"$undefined"
+6:"$undefined"

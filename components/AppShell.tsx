@@ -58,7 +58,7 @@ export function AppShell({
 
         <nav
           className={[
-            'app-nav-pill ml-4 mt-0 flex items-center rounded-full border px-3 py-2 shadow-soft backdrop-blur-[2px]',
+            'app-nav-pill mt-0 flex items-center rounded-full border px-3 py-2 shadow-soft backdrop-blur-[2px]',
             heroTone === 'light' && pathname !== '/contact'
               ? 'border-black/10 bg-[rgba(255,255,255,0.22)]'
               : 'border-white/10 bg-[rgba(22,22,22,0.40)]',
@@ -82,11 +82,6 @@ export function AppShell({
             );
           })}
         </nav>
-
-        <div className="availability-pill">
-          <span className="h-2.5 w-2.5 rounded-full bg-[#ea1f1a] shadow-[0_0_0_2px_rgba(234,31,26,0.15)]" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em]">Available — Oct 2026</span>
-        </div>
       </header>
 
       <main>{children}</main>

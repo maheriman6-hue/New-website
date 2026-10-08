@@ -782,6 +782,14 @@ button, input, textarea, select {
   isolation: isolate;
 }
 
+.site-header .app-nav-pill {
+  margin: 0;
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 :root[data-hero-transition="true"] .app-nav-pill, :root[data-perf="lite"] .app-nav-pill {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -2256,6 +2264,8 @@ button, input, textarea, select {
     gap: .1rem;
     margin: 0;
     padding: .25rem .4rem;
+    position: static;
+    transform: none;
   }
 
   .site-header .app-nav-pill a {
