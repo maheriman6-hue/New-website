@@ -629,37 +629,32 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 ;
 const slides = [
     {
-        title: 'Ines VARGA',
-        client: 'PHOTOGRAPHER & DIRECTOR',
-        category: 'LISBON — NEW YORK'
+        title: 'ZATEEF International',
+        client: 'SPORTSWEAR & STREETWEAR MANUFACTURER',
+        category: '[SIALKOT] — [PAKISTAN]'
     },
     {
-        title: 'Solstice',
-        client: 'VOGUE ITALIA',
-        category: 'FASHION — 2026',
-        image: '/media/solstice.webp',
-        alt: 'Fashion portrait'
+        title: 'Built to Move',
+        client: 'SPORTSWEAR',
+        category: 'PERFORMANCE FABRICS — 2026',
+        image: '/media/sportswear-hero.jpg',
+        alt: 'Man and woman wearing black performance sportswear',
+        unoptimized: true
     },
     {
-        title: 'Lane Seven',
-        client: 'KORA SWIM',
-        category: 'SPORT — 2026',
-        image: '/media/lane-seven.webp',
-        alt: 'Swimmer moving through deep blue water'
+        title: 'Street Ready',
+        client: 'STREETWEAR',
+        category: 'HOODIES & CARGOS — 2026',
+        image: '/media/streetwear-hero.jpg',
+        alt: 'Man in a black hoodie and cargo pants against a concrete wall',
+        unoptimized: true
     },
     {
-        title: 'Terracotta Hour',
-        client: 'MAISON ORÉ',
-        category: 'STILL LIFE — 2026',
-        image: '/media/terracotta-hour.webp',
-        alt: 'Sculptural ceramic vessels'
-    },
-    {
-        title: 'Drift',
-        client: 'SHORT FILM',
-        category: '2025',
-        image: '/media/drift.webp',
-        alt: 'Warm desert landscape'
+        title: 'Stitch by Stitch',
+        client: 'IN-HOUSE PRODUCTION',
+        category: 'SAMPLE TO BULK',
+        image: '/media/stiching.webp',
+        alt: 'Close-up of hands stitching black sportswear fabric on an industrial sewing machine'
     }
 ];
 const CAPTION_LEAD = 250;
@@ -734,25 +729,25 @@ const SlideMedia = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$
                     alt: slide.alt ?? '',
                     fill: true,
                     sizes: "100vw",
-                    unoptimized: true,
+                    unoptimized: slide.unoptimized,
                     loading: priority ? 'eager' : 'lazy',
                     priority: priority
                 }, void 0, false, {
                     fileName: "[project]/components/HomeHeroSlider.tsx",
-                    lineNumber: 131,
+                    lineNumber: 127,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                     className: "home-hero__media-shade"
                 }, void 0, false, {
                     fileName: "[project]/components/HomeHeroSlider.tsx",
-                    lineNumber: 141,
+                    lineNumber: 137,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/components/HomeHeroSlider.tsx",
-            lineNumber: 130,
+            lineNumber: 126,
             columnNumber: 7
         }, this);
     }
@@ -765,7 +760,7 @@ const SlideMedia = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$
                 children: "Zateef"
             }, void 0, false, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 148,
+                lineNumber: 144,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -773,13 +768,13 @@ const SlideMedia = /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$
                 children: "International"
             }, void 0, false, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 149,
+                lineNumber: 145,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/HomeHeroSlider.tsx",
-        lineNumber: 147,
+        lineNumber: 143,
         columnNumber: 5
     }, this);
 });
@@ -938,12 +933,12 @@ function HomeHeroSlider() {
                     priority: settledIndex === 1
                 }, void 0, false, {
                     fileName: "[project]/components/HomeHeroSlider.tsx",
-                    lineNumber: 308,
+                    lineNumber: 304,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 307,
+                lineNumber: 303,
                 columnNumber: 7
             }, this),
             incomingSlide && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -968,7 +963,7 @@ function HomeHeroSlider() {
                                         fill: "black"
                                     }, void 0, false, {
                                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                                        lineNumber: 316,
+                                        lineNumber: 312,
                                         columnNumber: 17
                                     }, this),
                                     MASK_STRIP_INDICES[transitionStripCount].map((index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("rect", {
@@ -983,23 +978,23 @@ function HomeHeroSlider() {
                                             }
                                         }, index, false, {
                                             fileName: "[project]/components/HomeHeroSlider.tsx",
-                                            lineNumber: 318,
+                                            lineNumber: 314,
                                             columnNumber: 19
                                         }, this))
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 315,
+                                lineNumber: 311,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/components/HomeHeroSlider.tsx",
-                            lineNumber: 314,
+                            lineNumber: 310,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                        lineNumber: 313,
+                        lineNumber: 309,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1014,18 +1009,18 @@ function HomeHeroSlider() {
                             priority: true
                         }, void 0, false, {
                             fileName: "[project]/components/HomeHeroSlider.tsx",
-                            lineNumber: 341,
+                            lineNumber: 337,
                             columnNumber: 13
                         }, this)
                     }, transitionIndex, false, {
                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                        lineNumber: 332,
+                        lineNumber: 328,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 312,
+                lineNumber: 308,
                 columnNumber: 9
             }, this),
             isIntro && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1034,38 +1029,56 @@ function HomeHeroSlider() {
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                         children: [
-                            "PHOTOGRAPHER & DIRECTOR",
+                            "SPORTSWEAR &",
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {
+                                className: "home-hero__mobile-break"
+                            }, void 0, false, {
+                                fileName: "[project]/components/HomeHeroSlider.tsx",
+                                lineNumber: 346,
+                                columnNumber: 13
+                            }, this),
+                            ' ',
+                            "STREETWEAR MANUFACTURER",
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
                                 lineNumber: 348,
-                                columnNumber: 41
+                                columnNumber: 13
                             }, this),
-                            "LISBON — NEW YORK"
+                            "[SIALKOT] — [PAKISTAN]"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                        lineNumber: 348,
+                        lineNumber: 344,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                         children: [
-                            "SELECTED WORK 2019–26",
+                            "CUSTOM · PRIVATE",
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {
+                                className: "home-hero__mobile-break"
+                            }, void 0, false, {
+                                fileName: "[project]/components/HomeHeroSlider.tsx",
+                                lineNumber: 353,
+                                columnNumber: 13
+                            }, this),
+                            ' ',
+                            "LABEL · BULK",
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 349,
-                                columnNumber: 35
+                                lineNumber: 355,
+                                columnNumber: 13
                             }, this),
-                            "↓ 05 STORIES"
+                            "↓ 03 STORIES"
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                        lineNumber: 349,
+                        lineNumber: 351,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 347,
+                lineNumber: 343,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1081,16 +1094,16 @@ function HomeHeroSlider() {
                                     formatSlideNumber(activeIndex),
                                     " ",
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        children: "/ 05"
+                                        children: "/ 04"
                                     }, void 0, false, {
                                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                                        lineNumber: 356,
+                                        lineNumber: 364,
                                         columnNumber: 46
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 355,
+                                lineNumber: 363,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1101,7 +1114,7 @@ function HomeHeroSlider() {
                                 children: activeSlide.title
                             }, void 0, false, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 358,
+                                lineNumber: 366,
                                 columnNumber: 11
                             }, this),
                             !isIntro && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1113,7 +1126,7 @@ function HomeHeroSlider() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 362,
+                                lineNumber: 370,
                                 columnNumber: 13
                             }, this),
                             isIntro && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1121,13 +1134,13 @@ function HomeHeroSlider() {
                                 children: "DRAG OR SWIPE TO TURN"
                             }, void 0, false, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 366,
+                                lineNumber: 374,
                                 columnNumber: 23
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                        lineNumber: 354,
+                        lineNumber: 362,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1150,29 +1163,29 @@ function HomeHeroSlider() {
                                     style: index === 0 ? introProgressStyle : slideProgressStyle
                                 }, `${activeIndex}-${progressRun}`, false, {
                                     fileName: "[project]/components/HomeHeroSlider.tsx",
-                                    lineNumber: 379,
+                                    lineNumber: 387,
                                     columnNumber: 15
                                 }, this)
                             }, slide.title, false, {
                                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                                lineNumber: 371,
+                                lineNumber: 379,
                                 columnNumber: 13
                             }, this))
                     }, void 0, false, {
                         fileName: "[project]/components/HomeHeroSlider.tsx",
-                        lineNumber: 369,
+                        lineNumber: 377,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/components/HomeHeroSlider.tsx",
-                lineNumber: 353,
+                lineNumber: 361,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/components/HomeHeroSlider.tsx",
-        lineNumber: 299,
+        lineNumber: 295,
         columnNumber: 5
     }, this);
 }

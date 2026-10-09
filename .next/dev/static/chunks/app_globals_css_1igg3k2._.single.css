@@ -1031,8 +1031,8 @@ button, input, textarea, select {
 .home-hero__image {
   -o-object-fit: cover;
   object-fit: cover;
-  -o-object-position: center 36%;
-  object-position: center 36%;
+  -o-object-position: center;
+  object-position: center;
   width: 100%;
   height: 100%;
 }
@@ -1099,6 +1099,10 @@ button, input, textarea, select {
   position: absolute;
   top: 18%;
   right: 4.4%;
+}
+
+.home-hero__mobile-break {
+  display: none;
 }
 
 .home-hero.is-intro .home-hero__caption {
@@ -2619,10 +2623,27 @@ button, input, textarea, select {
   }
 
   .home-hero__intro-meta {
-    gap: 1.2rem;
-    font-size: 8px;
+    letter-spacing: .04em;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    justify-content: stretch;
+    align-items: start;
+    gap: .75rem;
+    font-size: 10px;
+    line-height: 1.5;
+    display: grid;
     top: 20%;
+    left: 5%;
     right: 5%;
+  }
+
+  .home-hero__intro-meta p {
+    overflow-wrap: anywhere;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .home-hero__mobile-break {
+    display: initial;
   }
 
   .home-hero__caption {

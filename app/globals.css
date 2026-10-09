@@ -303,7 +303,7 @@ select {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 36%;
+  object-position: center;
 }
 
 .home-hero__media-shade {
@@ -368,6 +368,10 @@ select {
   font-size: 10px;
   line-height: 1.6;
   letter-spacing: 0.13em;
+}
+
+.home-hero__mobile-break {
+  display: none;
 }
 
 .home-hero.is-intro .home-hero__caption {
@@ -1886,10 +1890,27 @@ select {
   }
 
   .home-hero__intro-meta {
+    left: 5%;
     top: 20%;
     right: 5%;
-    font-size: 8px;
-    gap: 1.2rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    justify-content: stretch;
+    font-size: 10px;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    gap: 0.75rem;
+  }
+
+  .home-hero__intro-meta p {
+    min-width: 0;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .home-hero__mobile-break {
+    display: initial;
   }
 
   .home-hero__caption {

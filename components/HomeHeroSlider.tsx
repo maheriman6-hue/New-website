@@ -18,41 +18,37 @@ type Slide = {
   category: string;
   image?: string;
   alt?: string;
+  unoptimized?: boolean;
 };
 
 const slides: Slide[] = [
   {
-    title: 'Ines VARGA',
-    client: 'PHOTOGRAPHER & DIRECTOR',
-    category: 'LISBON — NEW YORK',
+    title: 'ZATEEF International',
+    client: 'SPORTSWEAR & STREETWEAR MANUFACTURER',
+    category: '[SIALKOT] — [PAKISTAN]',
   },
   {
-    title: 'Solstice',
-    client: 'VOGUE ITALIA',
-    category: 'FASHION — 2026',
-    image: '/media/solstice.webp',
-    alt: 'Fashion portrait',
+    title: 'Built to Move',
+    client: 'SPORTSWEAR',
+    category: 'PERFORMANCE FABRICS — 2026',
+    image: '/media/sportswear-hero.jpg',
+    alt: 'Man and woman wearing black performance sportswear',
+    unoptimized: true,
   },
   {
-    title: 'Lane Seven',
-    client: 'KORA SWIM',
-    category: 'SPORT — 2026',
-    image: '/media/lane-seven.webp',
-    alt: 'Swimmer moving through deep blue water',
+    title: 'Street Ready',
+    client: 'STREETWEAR',
+    category: 'HOODIES & CARGOS — 2026',
+    image: '/media/streetwear-hero.jpg',
+    alt: 'Man in a black hoodie and cargo pants against a concrete wall',
+    unoptimized: true,
   },
   {
-    title: 'Terracotta Hour',
-    client: 'MAISON ORÉ',
-    category: 'STILL LIFE — 2026',
-    image: '/media/terracotta-hour.webp',
-    alt: 'Sculptural ceramic vessels',
-  },
-  {
-    title: 'Drift',
-    client: 'SHORT FILM',
-    category: '2025',
-    image: '/media/drift.webp',
-    alt: 'Warm desert landscape',
+    title: 'Stitch by Stitch',
+    client: 'IN-HOUSE PRODUCTION',
+    category: 'SAMPLE TO BULK',
+    image: '/media/stiching.webp',
+    alt: 'Close-up of hands stitching black sportswear fabric on an industrial sewing machine',
   },
 ];
 
@@ -134,7 +130,7 @@ const SlideMedia = memo(function SlideMedia({
           alt={slide.alt ?? ''}
           fill
           sizes="100vw"
-          unoptimized
+          unoptimized={slide.unoptimized}
           loading={priority ? 'eager' : 'lazy'}
           priority={priority}
         />
@@ -345,15 +341,27 @@ export function HomeHeroSlider() {
 
       {isIntro && (
         <div className="home-hero__intro-meta" aria-hidden="true">
-          <p>PHOTOGRAPHER &amp; DIRECTOR<br />LISBON — NEW YORK</p>
-          <p>SELECTED WORK 2019–26<br />↓ 05 STORIES</p>
+          <p>
+            SPORTSWEAR &amp;
+            <br className="home-hero__mobile-break" />
+            {' '}STREETWEAR MANUFACTURER
+            <br />
+            [SIALKOT] — [PAKISTAN]
+          </p>
+          <p>
+            CUSTOM · PRIVATE
+            <br className="home-hero__mobile-break" />
+            {' '}LABEL · BULK
+            <br />
+            ↓ 03 STORIES
+          </p>
         </div>
       )}
 
       <div className="home-hero__caption">
         <div className="home-hero__caption-copy">
           <span className="home-hero__counter" aria-live="polite">
-            {formatSlideNumber(activeIndex)} <span>/ 05</span>
+            {formatSlideNumber(activeIndex)} <span>/ 04</span>
           </span>
           <span className={['home-hero__title', isIntro ? 'is-intro-title' : ''].join(' ')}>
             {activeSlide.title}
