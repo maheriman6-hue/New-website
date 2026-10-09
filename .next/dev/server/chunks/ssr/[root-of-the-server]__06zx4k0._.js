@@ -72,6 +72,8 @@ function PerformanceRuntime() {
             probeFrames = 0;
         };
         const onHeroTransition = ()=>beginFrameProbe();
+        const onQuoteModalOpen = ()=>lenis.stop();
+        const onQuoteModalClose = ()=>lenis.start();
         const onTick = (time)=>{
             lenis.raf(time * 1000);
             if (probeStart === 0 || probeComplete || document.visibilityState !== 'visible') return;
@@ -86,8 +88,12 @@ function PerformanceRuntime() {
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$gsap$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["default"].ticker.lagSmoothing(0);
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$gsap$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["default"].ticker.add(onTick);
         document.addEventListener('hero:transition-start', onHeroTransition);
+        document.addEventListener('quote-modal:open', onQuoteModalOpen);
+        document.addEventListener('quote-modal:close', onQuoteModalClose);
         return ()=>{
             document.removeEventListener('hero:transition-start', onHeroTransition);
+            document.removeEventListener('quote-modal:open', onQuoteModalOpen);
+            document.removeEventListener('quote-modal:close', onQuoteModalClose);
             __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$gsap$2f$index$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["default"].ticker.remove(onTick);
             lenis.destroy();
         };

@@ -27,13 +27,13 @@ export function Footer() {
 
         <div className="flex min-w-[220px] flex-col gap-3 text-[17px] text-[#f5f1ea]">
           <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#f5f1ea]/75">Contact</div>
-          <div>hello@inesvarga.studio</div>
-          <div>+351 912 000 000</div>
+          <div>zateefinternational@gmail.com</div>
+          <div>+92 328 9615 985</div>
         </div>
       </div>
 
       <div className="mt-8 text-center text-[clamp(5rem,17vw,24rem)] font-display font-black uppercase leading-[0.8] tracking-[-0.08em] text-[#f2eee6]">
-        VARGA
+        ZATEEF
       </div>
 
     </footer>

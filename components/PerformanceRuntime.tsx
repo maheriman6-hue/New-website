@@ -21,6 +21,8 @@ export function PerformanceRuntime() {
     };
 
     const onHeroTransition = () => beginFrameProbe();
+    const onQuoteModalOpen = () => lenis.stop();
+    const onQuoteModalClose = () => lenis.start();
     const onTick = (time: number) => {
       lenis.raf(time * 1000);
       if (probeStart === 0 || probeComplete || document.visibilityState !== 'visible') return;
@@ -38,9 +40,13 @@ export function PerformanceRuntime() {
     gsap.ticker.lagSmoothing(0);
     gsap.ticker.add(onTick);
     document.addEventListener('hero:transition-start', onHeroTransition);
+    document.addEventListener('quote-modal:open', onQuoteModalOpen);
+    document.addEventListener('quote-modal:close', onQuoteModalClose);
 
     return () => {
       document.removeEventListener('hero:transition-start', onHeroTransition);
+      document.removeEventListener('quote-modal:open', onQuoteModalOpen);
+      document.removeEventListener('quote-modal:close', onQuoteModalClose);
       gsap.ticker.remove(onTick);
       lenis.destroy();
     };

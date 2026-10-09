@@ -106,27 +106,29 @@ export function AppShell({
 
             <div className="space-y-2 text-[12px] uppercase tracking-[0.08em] text-[#f5f1ea]/75">
               <div className="font-mono">Based in</div>
-              <div className="font-mono">Lisbon — PT</div>
-              <div className="font-mono">New York — US</div>
+              <div className="font-mono">Sialkot</div>
+              <div className="font-mono">Pakistan</div>
             </div>
           </div>
 
           <div className="flex min-w-[180px] flex-col gap-3 text-[17px] text-[#f5f1ea]">
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#f5f1ea]/75">Social</div>
             <div>Instagram</div>
-            <div>Vimeo</div>
             <div>LinkedIn</div>
           </div>
 
           <div className="flex min-w-[220px] flex-col gap-3 text-[17px] text-[#f5f1ea]">
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#f5f1ea]/75">Contact</div>
-            <div>hello@inesvarga.studio</div>
-            <div>+351 912 000 000</div>
+            <div>zateefinternational@gmail.com</div>
+            <div>+92 328 9615 985 </div>
           </div>
         </div>
 
-        <div className="footer-motion__wordmark mt-8 text-center text-[clamp(5rem,17vw,24rem)] font-display font-black uppercase leading-[0.8] tracking-[-0.08em] text-[#f2eee6]">
-          VARGA
+        <div className="footer-motion__wordmark mt-8 text-center text-[clamp(5rem,17vw,24rem)] font-display tracking-wide font-black uppercase leading-[0.8] tracking-[-0.08em] text-[#f2eee6]">
+          ZATEEF
+          <div className="text-[clamp(1.5rem,4vw,2.5rem)] font-mono tracking-[0.18em] text-[#f2eee6]/75">
+          INTERNATIONAL
+          </div>
         </div>
 
       </footer>

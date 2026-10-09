@@ -1,14 +1,15 @@
 'use client';
 
-import Link from 'next/link';
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { QuoteRequestModal } from '@/components/QuoteRequestModal';
 
 const steps = Array.from({ length: 10 }, (_, index) => index);
 
 export function RedCTA() {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const [isQuoteOpen, setIsQuoteOpen] = useState(false);
 
   useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -59,21 +60,26 @@ export function RedCTA() {
         ))}
       </div>
       <div className="red-cta__content">
-        <p className="red-cta__eyebrow">(06) — COMMISSIONS OPEN</p>
+        <p className="red-cta__eyebrow">(06) — NOW TAKING ORDERS</p>
         <h2 id="red-cta-heading" className="red-cta__heading">
-          <span>LET’S TURN</span>
-          <em>the next frame.</em>
+          <span>LET’S BUILD</span>
+          <em>your brand’s next collection</em>
         </h2>
         <div className="red-cta__bottom">
-          <Link className="red-cta__button" href="/contact">
-            Start a project <span aria-hidden="true">↗</span>
-          </Link>
-          <a className="red-cta__email" href="mailto:hello@inesvarga.studio">
-            hello@inesvarga.studio
+          <button
+            className="red-cta__button"
+            type="button"
+            onClick={() => setIsQuoteOpen(true)}
+          >
+            Request a quote <span aria-hidden="true">↗</span>
+          </button>
+          <a className="red-cta__email" href="mailto:zateefinternational@gmail.com">
+            zateefinternational@gmail.com
           </a>
-          <span className="red-cta__reply">REPLY WITHIN 48H</span>
+          <span className="red-cta__reply">REPLY WITHIN 24H</span>
         </div>
       </div>
+      {isQuoteOpen && <QuoteRequestModal onClose={() => setIsQuoteOpen(false)} />}
     </section>
   );
 }
