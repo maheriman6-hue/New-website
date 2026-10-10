@@ -313,6 +313,10 @@ select {
   pointer-events: none;
 }
 
+.home-hero__media-shade--strong-bottom {
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.8), transparent 40%), linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent 26%);
+}
+
 .home-hero__scene.is-intro .home-hero__media-shade {
   display: none;
 }
@@ -605,7 +609,7 @@ select {
 
 .intro-statement__chip img {
   object-fit: cover;
-  object-position: center 42%;
+  object-position: center;
 }
 
 .intro-statement__copy {
