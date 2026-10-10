@@ -27,16 +27,8 @@ const imageChips = [
   '/media/terracotta-hour.webp',
 ];
 
-const refreshScrollPositions = async (section: HTMLElement) => {
+const refreshScrollPositions = async () => {
   await document.fonts.ready;
-  const images = Array.from(section.querySelectorAll('img'));
-  await Promise.all(images.map(async (image) => {
-    try {
-      await image.decode();
-    } catch (error) {
-      console.error(`Could not decode intro statement image: ${image.currentSrc}`, error);
-    }
-  }));
 };
 
 export function IntroStatement() {
@@ -83,7 +75,7 @@ export function IntroStatement() {
     }, section);
 
     let cancelled = false;
-    void refreshScrollPositions(section).then(() => {
+    void refreshScrollPositions().then(() => {
       if (!cancelled) ScrollTrigger.refresh();
     }).catch((error: unknown) => {
       console.error('Could not refresh intro statement scroll positions.', error);

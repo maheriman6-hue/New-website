@@ -63,7 +63,7 @@ const IMAGE_PRELOAD_ATTEMPTS = 3;
 
 const introProgressStyle = { '--progress-duration': `${INTRO_DURATION}ms` } as CSSProperties;
 const slideProgressStyle = { '--progress-duration': `${SLIDE_DURATION}ms` } as CSSProperties;
-const decodedImages = new Map<string, Promise<void>>();
+const preloadedImages = new Map<string, Promise<void>>();
 const MASK_STRIP_INDICES = {
   10: Array.from({ length: TOTAL_STRIPS }, (_, index) => index),
   6: Array.from({ length: LITE_STRIPS }, (_, index) => index),
@@ -77,7 +77,7 @@ function formatAnimationDelay(index: number, count: 6 | 10) {
   return `${((STRIP_SPAN - STRIP_DURATION) / (count - 1)) * index}ms`;
 }
 
-async function loadAndDecodeImage(src: string, attempt = 1): Promise<void> {
+async function loadImage(src: string, attempt = 1): Promise<void> {
   try {
     const image = await new Promise<HTMLImageElement>((resolve, reject) => {
       const preloadedImage = new window.Image();
@@ -87,7 +87,6 @@ async function loadAndDecodeImage(src: string, attempt = 1): Promise<void> {
       preloadedImage.src = src;
     });
 
-    await image.decode();
   } catch (error) {
     if (attempt >= IMAGE_PRELOAD_ATTEMPTS) {
       throw new Error(`Could not preload hero image after ${attempt} attempts: ${src}`, { cause: error });
@@ -96,21 +95,21 @@ async function loadAndDecodeImage(src: string, attempt = 1): Promise<void> {
     await new Promise<void>((resolve) => {
       window.setTimeout(resolve, attempt * 300);
     });
-    return loadAndDecodeImage(src, attempt + 1);
+    return loadImage(src, attempt + 1);
   }
 }
 
-function preloadAndDecode(slide: Slide) {
+function preloadImage(slide: Slide) {
   const src = slide.image;
   if (!src) return Promise.resolve();
 
-  const cached = decodedImages.get(src);
+  const cached = preloadedImages.get(src);
   if (cached) return cached;
 
-  const request = loadAndDecodeImage(src);
+  const request = loadImage(src);
 
-  decodedImages.set(src, request);
-  request.catch(() => decodedImages.delete(src));
+  preloadedImages.set(src, request);
+  request.catch(() => preloadedImages.delete(src));
   return request;
 }
 
@@ -187,7 +186,7 @@ export function HomeHeroSlider() {
     updateTransitionState(true);
 
     try {
-      await preloadAndDecode(slides[nextIndex]);
+      await preloadImage(slides[nextIndex]);
     } catch (error) {
       console.error('Hero slide transition was cancelled because its image could not be decoded.', error);
       isTransitioningRef.current = false;
@@ -205,6 +204,12 @@ export function HomeHeroSlider() {
       setSettledIndex(nextIndex);
       isTransitioningRef.current = false;
       updateTransitionState(false);
+      const followingIndex = (nextIndex + 1) % slides.length;
+      setProgressRun((run) => run + 1);
+      setIsAutoplayRunning(true);
+      timerRef.current = window.setTimeout(() => {
+        void moveToRef.current(followingIndex);
+      }, nextIndex === 0 ? INTRO_DURATION : SLIDE_DURATION);
     } else {
       timerRef.current = window.setTimeout(() => {
         setTransitionIndex(nextIndex);
@@ -216,24 +221,22 @@ export function HomeHeroSlider() {
           timerRef.current = null;
 
           const followingIndex = (nextIndex + 1) % slides.length;
-          void preloadAndDecode(slides[followingIndex]).catch((error: unknown) => {
+          void preloadImage(slides[followingIndex]).catch((error: unknown) => {
             console.error('Could not preload the next hero image.', error);
           });
 
-          if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            setProgressRun((run) => run + 1);
-            setIsAutoplayRunning(true);
-            timerRef.current = window.setTimeout(() => {
-              void moveToRef.current(followingIndex);
-            }, nextIndex === 0 ? INTRO_DURATION : SLIDE_DURATION);
-          }
+          setProgressRun((run) => run + 1);
+          setIsAutoplayRunning(true);
+          timerRef.current = window.setTimeout(() => {
+            void moveToRef.current(followingIndex);
+          }, nextIndex === 0 ? INTRO_DURATION : SLIDE_DURATION);
         }, STRIP_SPAN);
       }, CAPTION_LEAD);
       return;
     }
 
     const followingIndex = (nextIndex + 1) % slides.length;
-    void preloadAndDecode(slides[followingIndex]).catch((error: unknown) => {
+    void preloadImage(slides[followingIndex]).catch((error: unknown) => {
       console.error('Could not preload the next hero image.', error);
     });
   }, [clearTimer, updateTransitionState]);
@@ -255,7 +258,7 @@ export function HomeHeroSlider() {
 
   useEffect(() => {
     let cancelled = false;
-    void preloadAndDecode(slides[1]).then(() => {
+    void preloadImage(slides[1]).then(() => {
       if (cancelled) return;
       setIsAutoplayRunning(true);
       setProgressRun((run) => run + 1);
