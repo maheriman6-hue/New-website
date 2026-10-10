@@ -53,7 +53,7 @@ export function ContactExperience() {
           {steps.map((step) => <span className="contact-page__shutter" key={step} />)}
         </div>
         <div className="contact-page__content">
-          <p className="contact-page__eyebrow">(CONTACT) — COMMISSIONS OPEN FROM OCT 2026</p>
+          <p className="contact-page__eyebrow">(CONTACT)</p>
           <h1 id="contact-heading" className="contact-page__title">SAY</h1>
           <a className="contact-page__email" href="mailto:zateefinternational@gmail.com">
             zateefinternational@gmail.com <span aria-hidden="true">↗</span>
