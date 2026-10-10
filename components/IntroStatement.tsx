@@ -13,18 +13,18 @@ type StatementWord = {
 };
 
 const statementLines: StatementWord[][] = [
-  [{ text: 'WE' }, { text: 'ARE' }, { text: 'A' }],
-  [{ text: 'CREATIVE', accent: true }, { text: 'STUDIO' }],
-  [{ text: 'FOCUSING' }, { text: 'ON' }],
-  [{ text: 'PICTURES' }, { text: 'THAT' }],
-  [{ text: 'REFUSE', accent: true, italic: true }, { text: 'TO' }, { text: 'STAND' }],
+  [{ text: 'WE' }, { text: 'BUILD' }],
+  [{ text: 'SPORTSWEAR', accent: true }],
+  [{ text: '&' }, { text: 'STREETWEAR' }, { text: 'FOR' }],
+  [{ text: 'BRANDS' }, { text: 'THAT' }],
+  [{ text: 'refuse', accent: true, italic: true }, { text: 'TO' }, { text: 'STAND' }],
   [{ text: 'STILL.' }],
 ];
 
 const imageChips = [
-  '/media/drift.webp',
-  '/media/lane-seven.webp',
-  '/media/terracotta-hour.webp',
+  { src: '/media/sportswear-hero.jpg', alt: 'Sportswear models' },
+  { src: '/media/streetwear-hero.jpg', alt: 'Streetwear hoodie' },
+  { src: '/media/stiching.webp', alt: 'Hands stitching fabric' },
 ];
 
 const refreshScrollPositions = async () => {
@@ -89,14 +89,14 @@ export function IntroStatement() {
   return (
     <section ref={sectionRef} className="intro-statement" aria-labelledby="intro-statement-title">
       <div className="intro-statement__topline">
-        <span>(01) — INTRO</span>
-        <span>EST. 2014 · 212 COMMISSIONS</span>
+        <span>(01) — WHO WE ARE</span>
+        <span>CUSTOM MANUFACTURING · SINCE [2023]</span>
       </div>
 
       <h2
         id="intro-statement-title"
         className="intro-statement__headline"
-        aria-label="We are a creative studio focusing on pictures that refuse to stand still."
+        aria-label="We build sportswear and streetwear for brands that refuse to stand still."
       >
         {statementLines.map((line, lineIndex) => (
           <span className="intro-statement__line" key={`line-${lineIndex}`}>
@@ -114,18 +114,18 @@ export function IntroStatement() {
               </span>
             ))}
             {lineIndex === 1 && (
-              <span className="intro-statement__chip" aria-hidden="true">
-                <Image src={imageChips[0]} alt="" fill sizes="112px" />
+              <span className="intro-statement__chip">
+                <Image src={imageChips[0].src} alt={imageChips[0].alt} fill sizes="112px" />
               </span>
             )}
             {lineIndex === 3 && (
-              <span className="intro-statement__chip intro-statement__chip--wide" aria-hidden="true">
-                <Image src={imageChips[1]} alt="" fill sizes="150px" />
+              <span className="intro-statement__chip intro-statement__chip--wide">
+                <Image src={imageChips[1].src} alt={imageChips[1].alt} fill sizes="150px" />
               </span>
             )}
             {lineIndex === 5 && (
-              <span className="intro-statement__chip" aria-hidden="true">
-                <Image src={imageChips[2]} alt="" fill sizes="112px" />
+              <span className="intro-statement__chip">
+                <Image src={imageChips[2].src} alt={imageChips[2].alt} fill sizes="112px" />
               </span>
             )}
           </span>
@@ -134,13 +134,13 @@ export function IntroStatement() {
 
       <div className="intro-statement__copy">
         <p>
-          Fashion, still life and moving image for brands that would rather be felt than seen.
-          Based between Lisbon and New York — shooting everywhere.
+          Custom sportswear and streetwear for brands that would rather be worn than talked about.
+          Based in [SIALKOT, PAKISTAN] — from first sample to final delivery.
         </p>
       </div>
 
       <Link className="intro-statement__link" href="/about">
-        About Ines <span aria-hidden="true">↗</span>
+        About Zateef <span aria-hidden="true">↗</span>
       </Link>
     </section>
   );

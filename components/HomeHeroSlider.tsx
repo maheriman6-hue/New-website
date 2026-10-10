@@ -19,6 +19,8 @@ type Slide = {
   image?: string;
   alt?: string;
   unoptimized?: boolean;
+  imagePosition?: CSSProperties['objectPosition'];
+  strongBottomShade?: boolean;
 };
 
 const slides: Slide[] = [
@@ -49,6 +51,15 @@ const slides: Slide[] = [
     category: 'SAMPLE TO BULK',
     image: '/media/stiching.webp',
     alt: 'Close-up of hands stitching black sportswear fabric on an industrial sewing machine',
+  },
+  {
+    title: 'Ready to Ship',
+    client: 'PACKING',
+    category: 'GLOBAL DELIVERY — 2026',
+    image: '/media/zateef-delivery.webp',
+    alt: 'Black Zateef International shipping boxes, an open box with a packed black hoodie, a checklist and a thank-you card on a wooden table',
+    imagePosition: '58% 0%',
+    strongBottomShade: true,
   },
 ];
 
@@ -129,11 +140,12 @@ const SlideMedia = memo(function SlideMedia({
           alt={slide.alt ?? ''}
           fill
           sizes="100vw"
+          style={slide.imagePosition ? { objectPosition: slide.imagePosition } : undefined}
           unoptimized={slide.unoptimized}
           loading={priority ? 'eager' : 'lazy'}
           priority={priority}
         />
-        <div className="home-hero__media-shade" />
+        <div className={['home-hero__media-shade', slide.strongBottomShade ? 'home-hero__media-shade--strong-bottom' : ''].join(' ')} />
       </div>
     );
   }
@@ -356,7 +368,7 @@ export function HomeHeroSlider() {
             <br className="home-hero__mobile-break" />
             {' '}LABEL · BULK
             <br />
-            ↓ 03 STORIES
+            ↓ 04 STORIES
           </p>
         </div>
       )}
@@ -364,7 +376,7 @@ export function HomeHeroSlider() {
       <div className="home-hero__caption">
         <div className="home-hero__caption-copy">
           <span className="home-hero__counter" aria-live="polite">
-            {formatSlideNumber(activeIndex)} <span>/ 04</span>
+            {formatSlideNumber(activeIndex)} <span>/ 05</span>
           </span>
           <span className={['home-hero__title', isIntro ? 'is-intro-title' : ''].join(' ')}>
             {activeSlide.title}
