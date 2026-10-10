@@ -21,7 +21,6 @@ export function Footer() {
         <div className="flex min-w-[180px] flex-col gap-3 text-[17px] text-[#f5f1ea]">
           <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#f5f1ea]/75">Social</div>
           <div>Instagram</div>
-          <div>Vimeo</div>
           <div>LinkedIn</div>
         </div>
 

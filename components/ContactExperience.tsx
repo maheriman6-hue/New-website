@@ -1,14 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { AppShell } from '@/components/AppShell';
+import { QuoteRequestModal } from '@/components/QuoteRequestModal';
 
 const steps = Array.from({ length: 10 }, (_, index) => index);
 
 export function ContactExperience() {
   const panelRef = useRef<HTMLElement | null>(null);
+  const [isQuoteOpen, setIsQuoteOpen] = useState(false);
 
   useLayoutEffect(() => {
     const panel = panelRef.current;
@@ -53,46 +55,50 @@ export function ContactExperience() {
         <div className="contact-page__content">
           <p className="contact-page__eyebrow">(CONTACT) — COMMISSIONS OPEN FROM OCT 2026</p>
           <h1 id="contact-heading" className="contact-page__title">SAY</h1>
-          <a className="contact-page__email" href="mailto:hello@inesvarga.studio">
-            hello@inesvarga.studio <span aria-hidden="true">↗</span>
+          <a className="contact-page__email" href="mailto:zateefinternational@gmail.com">
+            zateefinternational@gmail.com <span aria-hidden="true">↗</span>
           </a>
 
           <div className="contact-page__details">
             <section className="contact-page__detail" aria-labelledby="contact-commissions">
-              <h2 id="contact-commissions">Commissions</h2>
-              <p>Campaign, editorial, film</p>
-              <p>Reply within 48 hours</p>
+              <h2 id="contact-commissions">ORDERS</h2>
+              <p>Streetwear, sportswear, private label</p>
+              <p>Reply within 24 hours</p>
             </section>
             <section className="contact-page__detail" aria-labelledby="contact-representation">
-              <h2 id="contact-representation">Representation</h2>
-              <p>Atelier Nord — Paris</p>
-              <a href="mailto:agent@ateliernord.fr">agent@ateliernord.fr</a>
+              <h2 id="contact-representation">WHATSAPP</h2>
+              <p>Chat with our team for a quick quote</p>
+              <a href="https://api.whatsapp.com/send/?phone=923289615985&text=Hi%2C+I+want+to+request+a+quote+for+clothing+manufacturing.&type=phone_number&app_absent=0" target="_blank" rel="noreferrer">
+                +92 328 9615 985
+              </a>
             </section>
             <section className="contact-page__detail" aria-labelledby="contact-studio">
-              <h2 id="contact-studio">Studio</h2>
-              <p>Rua da Rosa 42, Lisbon</p>
-              <a href="tel:+351912000000">+351 912 000 000</a>
+              <h2 id="contact-studio">WHAT YOU GET</h2>
+              <p>Samples before bulk orders</p>
+              <a href="tel:+351912000000">	Tracked shipments to your door</a>
             </section>
             <section className="contact-page__detail contact-page__detail--social" aria-labelledby="contact-social">
               <h2 id="contact-social">Social</h2>
-              <a href="https://www.instagram.com/" target="_blank" rel="noreferrer">Instagram ↗</a>
-              <a href="https://vimeo.com/" target="_blank" rel="noreferrer">Vimeo ↗</a>
+              <a href="https://www.instagram.com/zateef_international?mdxt=MW12c3M0NDIKNmVjMg==" target="_blank" rel="noreferrer">Instagram ↗</a>
+              <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer">LinkedIn ↗</a>
             </section>
           </div>
 
           <div className="contact-page__actions">
-            <a
+            <button
               className="contact-page__button contact-page__button--dark"
-              href="mailto:hello@inesvarga.studio?subject=Commission%20inquiry"
+              type="button"
+              onClick={() => setIsQuoteOpen(true)}
             >
-              Start a commission <span aria-hidden="true">↗</span>
-            </a>
+              Request a quote <span aria-hidden="true">↗</span>
+            </button>
             <Link className="contact-page__button contact-page__button--red" href="/work">
-              See the work first
+              See what we make
             </Link>
           </div>
         </div>
       </section>
+      {isQuoteOpen && <QuoteRequestModal onClose={() => setIsQuoteOpen(false)} />}
     </AppShell>
   );
 }

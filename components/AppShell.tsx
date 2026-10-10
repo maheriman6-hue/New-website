@@ -120,7 +120,7 @@ export function AppShell({
           <div className="flex min-w-[220px] flex-col gap-3 text-[17px] text-[#f5f1ea]">
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#f5f1ea]/75">Contact</div>
             <div>zateefinternational@gmail.com</div>
-            <div>+92 328 9615 985 </div>
+            <div><a href="https://api.whatsapp.com/send/?phone=923289615985&text=Hi%2C+I+want+to+request+a+quote+for+clothing+manufacturing.&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">+92 328 9615 985</a></div>
           </div>
         </div>
 

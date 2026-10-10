@@ -550,6 +550,10 @@ select {
   text-transform: uppercase;
 }
 
+.intro-statement__year {
+  font-variant-numeric: tabular-nums;
+}
+
 .intro-statement__headline {
   display: flex;
   width: min(100%, 1120px);
@@ -572,6 +576,7 @@ select {
   align-items: center;
   column-gap: 0.2em;
   row-gap: 0.06em;
+  clip-path: inset(0 0 -0.16em 0);
 }
 
 .intro-statement__word,
@@ -626,6 +631,7 @@ select {
 }
 
 .intro-statement__link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -637,8 +643,60 @@ select {
   font-weight: 600;
 }
 
-.intro-statement__link span {
+.intro-statement__link-arrow {
   color: var(--statement-accent);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.intro-statement__link-underline {
+  display: block;
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: rgba(242, 238, 230, 0.55);
+  transform: scaleX(0);
+}
+
+.intro-statement.is-animation-active .intro-statement__link {
+  border-bottom-color: transparent;
+}
+
+.intro-statement.is-animation-active .intro-statement__link-underline {
+  transition: none;
+}
+
+.intro-statement__link:hover .intro-statement__link-arrow {
+  transform: translate(3px, -3px);
+}
+
+.intro-statement__link:hover .intro-statement__link-underline {
+  animation: introUnderlineSweep 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.intro-statement__link:hover {
+  border-bottom-color: transparent;
+}
+
+@keyframes introUnderlineSweep {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-statement__link-arrow {
+    transition: none;
+  }
+
+  .intro-statement__link:hover .intro-statement__link-arrow {
+    transform: none;
+  }
+
+  .intro-statement__link:hover .intro-statement__link-underline {
+    animation: none;
+    transform: scaleX(1);
+  }
 }
 
 .selected-work {
@@ -2625,7 +2683,13 @@ select {
   justify-content: center;
   gap: 0.65rem;
   border-radius: 999px;
+  border: 0;
   padding: 0 1.7rem;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  cursor: pointer;
   transition: transform 220ms ease, background-color 220ms ease, color 220ms ease;
 }
 
