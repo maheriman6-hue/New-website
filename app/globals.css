@@ -2303,6 +2303,7 @@ select {
 }
 
 .about-story__statement {
+  position: relative;
   max-width: 29ch;
   margin: 0;
   font-family: var(--font-serif), serif;
@@ -2312,8 +2313,71 @@ select {
   line-height: 0.98;
 }
 
+.about-story__visual-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+.about-story__line-mask {
+  display: block;
+  flex: none;
+  overflow: hidden;
+  margin: -0.12em 0;
+  padding: 0.12em 0;
+  line-height: 0.98;
+  contain: paint;
+}
+
+.about-story__line-content {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.about-story__measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  max-width: 29ch;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.about-story.is-animation-pending .about-story__eyebrow,
+.about-story.is-animation-pending .about-story__statement-copy,
+.about-story.is-animation-pending .about-story__signature,
+.about-story.is-animation-pending .about-story__link {
+  opacity: 0;
+}
+
+.about-story.is-animation-pending .about-story__eyebrow {
+  transform: translateY(12px);
+}
+
+.about-story.is-animation-pending .about-story__line-content {
+  opacity: 0;
+  transform: translateY(calc(100% + 0.24em + 4px));
+}
+
+.about-story__signature-mask {
+  overflow: hidden;
+  margin: calc(clamp(1.5rem, 3vw, 3rem) - 0.12em) 0 -0.12em;
+  padding: 0.12em 0;
+  contain: paint;
+}
+
+.about-story.is-animation-pending .about-story__signature {
+  opacity: 0;
+  transform: translateY(calc(100% + 0.24em + 4px));
+  color: var(--paper);
+}
+
+.about-story.is-animation-pending .about-story__link {
+  transform: translateY(14px);
+}
+
 .about-story__signature {
-  margin-top: clamp(1.5rem, 3vw, 3rem);
   color: var(--red);
   font-family: var(--font-serif), serif;
   font-size: clamp(2.5rem, 4.5vw, 5rem);

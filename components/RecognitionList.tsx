@@ -1,16 +1,16 @@
 const recognitions = [
-  { honor: 'Campaign of the Year', publication: 'Selected campaign', year: '2025' },
-  { honor: 'Editorial Storytelling', publication: 'Editorial annual', year: '2024' },
-  { honor: 'Motion Direction', publication: 'Motion shortlist', year: '2023' },
+  { honor: 'Share your design', publication: 'TECH PACK, SKETCH OR IDEA', year: '01' },
+  { honor: 'Approve your sample', publication: 'FIT · FABRIC · PRINT CHECK', year: '02' },
+  { honor: 'We produce and ship', publication: 'QUALITY CHECKED · TRACKED SHIPPING', year: '03' },
 ];
 
 export function RecognitionList() {
   return (
     <div className="recognition-table" role="table" aria-label="Selected recognition">
       <div className="recognition-table__head" role="row">
-        <span role="columnheader">Recognition</span>
-        <span role="columnheader">Distinction</span>
-        <span role="columnheader">Year</span>
+        <span role="columnheader">PROCESS</span>
+        <span role="columnheader">WHAT HAPPENS</span>
+        <span role="columnheader">STEP</span>
       </div>
       {recognitions.map((item) => (
         <div className="recognition-table__row" role="row" key={item.honor}>

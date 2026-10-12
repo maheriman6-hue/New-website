@@ -8,29 +8,244 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AppShell } from '@/components/AppShell';
 import { PortraitReveal } from '@/components/PortraitReveal';
 import { RecognitionList } from '@/components/RecognitionList';
+import {
+  createEntranceTimeline,
+  ENTRANCE_EASE,
+  ENTRANCE_TIMING,
+  observeEntranceOnce,
+  registerEntranceEase,
+} from '@/lib/entranceMotion';
+
+const ABOUT_STORY_QUOTE =
+  'Every piece starts as a sketch and ends in someone’s wardrobe. We make everything in between: sportswear and streetwear that keep moving long after they leave our factory.';
+
+const ABOUT_TIMELINE_DELAY = 0.2;
+
+function measureQuoteLines(
+  heading: HTMLHeadingElement,
+  fallback: HTMLSpanElement | null,
+): string[][] | null {
+  let probe: HTMLSpanElement | null = null;
+  const textNode = fallback?.firstChild ?? (() => {
+    probe = document.createElement('span');
+    probe.className = 'about-story__measure';
+    probe.setAttribute('aria-hidden', 'true');
+    probe.textContent = ABOUT_STORY_QUOTE;
+    heading.append(probe);
+    return probe.firstChild;
+  })();
+
+  if (!(textNode instanceof Text)) {
+    probe?.remove();
+    return null;
+  }
+
+  const lineGroups: { top: number; words: string[] }[] = [];
+  const matches = Array.from(ABOUT_STORY_QUOTE.matchAll(/\S+/g));
+  const range = document.createRange();
+
+  for (const match of matches) {
+    const start = match.index ?? 0;
+    range.setStart(textNode, start);
+    range.setEnd(textNode, start + match[0].length);
+    const bounds = range.getBoundingClientRect();
+
+    if (bounds.width === 0 || bounds.height === 0) {
+      probe?.remove();
+      return null;
+    }
+
+    const priorLine = lineGroups[lineGroups.length - 1];
+    if (!priorLine || Math.abs(priorLine.top - bounds.top) > 1) {
+      lineGroups.push({ top: bounds.top, words: [match[0]] });
+    } else {
+      priorLine.words.push(match[0]);
+    }
+  }
+
+  probe?.remove();
+  return lineGroups.map((line) => line.words);
+}
+
+function areLinesEqual(left: string[][], right: string[][]) {
+  return left.length === right.length
+    && left.every((line, index) => line.length === right[index].length
+      && line.every((word, wordIndex) => word === right[index][wordIndex]));
+}
 
 const statistics = [
-  { value: 12, label: 'Years behind the lens' },
-  { value: 211, label: 'Commissions' },
-  { value: 18, label: 'Countries' },
-  { value: 9, label: 'Awards' },
+  { value: 12, label: 'YEARS IN MANUFACTURING' },
+  { value: 211, label: 'ORDERS DELIVERED' },
+  { value: 18, label: 'COUNTRIES SHIPPED TO' },
+  { value: 9, label: 'TEAM MEMBERS (or PIECES PRODUCED, or REPEAT CLIENTS)' },
 ];
 
 const services = [
-  { name: 'Photography', details: 'Campaign · Editorial · Still life' },
-  { name: 'Art Direction', details: 'Concept · Casting · Set design' },
-  { name: 'Motion', details: 'Fashion film · Loops · Social cuts' },
+  { name: 'SPORTSWEAR', details: 'JERSEYS · TRACKSUITS · TRAINING WEAR' },
+  { name: 'STREETWEAR', details: '	HOODIES · T-SHIRTS · CARGO PANTS' },
+  { name: 'PRIVATE LABEL', details: 'YOUR LOGO · YOUR TAGS · YOUR PACKAGING' },
+  { name: 'SAMPLING', details: 'TECH PACKS · PROTOTYPES · FIT SAMPLES' },
+  { name: 'BULK ORDERS', details: 'CUTTING · STITCHING · QUALITY CHECK' },
+  { name: 'DELIVERY', details: 'PACKING · TRACKED SHIPMENTS · DOOR TO DOOR' },
 ];
 
 const setImages = [
-  { src: '/media/drift.webp', alt: 'Landscape between takes at golden hour', caption: 'BETWEEN TAKES — PORTUGAL' },
-  { src: '/media/terracotta-hour.webp', alt: 'Objects arranged on a studio set', caption: 'STILL LIFE SET — LISBON' },
-  { src: '/media/lane-seven.webp', alt: 'Blue water on a campaign set', caption: 'WATER STUDY — 2025' },
+  { src: '/media/drift.webp', alt: 'Landscape between takes at golden hour', caption: 'ON THE STITCHING FLOOR — SIALKOT' },
+  { src: '/media/terracotta-hour.webp', alt: 'Objects arranged on a studio set', caption: 'PACKED FOR DISPATCH — 2026' },
+  { src: '/media/lane-seven.webp', alt: 'Blue water on a campaign set', caption: 'FINISHED PIECES — 2026' },
 ];
 
 export function AboutExperience() {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const storyRef = useRef<HTMLElement | null>(null);
+  const statementRef = useRef<HTMLHeadingElement | null>(null);
+  const fallbackRef = useRef<HTMLSpanElement | null>(null);
+  const hasStoryAnimationStarted = useRef(false);
+  const [quoteLines, setQuoteLines] = useState<string[][] | null>(null);
   const [activeService, setActiveService] = useState(0);
+
+  useLayoutEffect(() => {
+    const story = storyRef.current;
+    const statement = statementRef.current;
+    if (!story || !statement || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    story.classList.add('is-animation-pending');
+    let disposed = false;
+    let fontsReady = false;
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const splitQuote = () => {
+      const lines = measureQuoteLines(statement, fallbackRef.current);
+      if (!lines) {
+        console.error('Unable to measure the About quote line breaks.');
+        if (!quoteLines) story.classList.remove('is-animation-pending');
+        return;
+      }
+
+      setQuoteLines((current) => current && areLinesEqual(current, lines) ? current : lines);
+    };
+
+    void document.fonts.ready.then(() => {
+      if (disposed) return;
+      fontsReady = true;
+      splitQuote();
+    });
+
+    const onResize = () => {
+      if (!fontsReady) return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(splitQuote, 150);
+    };
+
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+
+    return () => {
+      disposed = true;
+      clearTimeout(resizeTimer);
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+      story.classList.remove('is-animation-pending');
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const story = storyRef.current;
+    if (!story || !quoteLines) return;
+
+    if (hasStoryAnimationStarted.current) {
+      story.classList.remove('is-animation-pending');
+      return;
+    }
+
+    const label = story.querySelector<HTMLElement>('.about-story__eyebrow');
+    const lineContents = Array.from(story.querySelectorAll<HTMLElement>('.about-story__line-content'));
+    const signatureMask = story.querySelector<HTMLElement>('.about-story__signature-mask');
+    const signature = story.querySelector<HTMLElement>('.about-story__signature');
+    const button = story.querySelector<HTMLElement>('.about-story__link');
+    if (!label || !signatureMask || !signature || !button || lineContents.length !== quoteLines.length) {
+      story.classList.remove('is-animation-pending');
+      return;
+    }
+
+    registerEntranceEase();
+    const animatedElements = [label, ...lineContents, signature, button];
+    let stopObserving: (() => void) | undefined;
+    let startTimer: ReturnType<typeof setTimeout> | undefined;
+    const context = gsap.context(() => {
+      gsap.set(label, { opacity: 0, y: ENTRANCE_TIMING.labelOffset });
+      lineContents.forEach((line) => {
+        const mask = line.parentElement;
+        if (mask) gsap.set(line, { opacity: 0, y: mask.getBoundingClientRect().height + 4 });
+      });
+      gsap.set(signature, {
+        opacity: 0,
+        y: signatureMask.getBoundingClientRect().height + 4,
+        color: getComputedStyle(story).color,
+      });
+      gsap.set(button, { opacity: 0, y: ENTRANCE_TIMING.labelOffset });
+
+      const timeline = createEntranceTimeline(animatedElements, {
+        willChange: 'transform, opacity, color',
+        onComplete: () => {
+          gsap.set(animatedElements, { clearProps: 'willChange,transform,opacity,color' });
+          story.classList.remove('is-animation-pending');
+        },
+      });
+      timeline.to(label, {
+        opacity: 1,
+        y: 0,
+        duration: ENTRANCE_TIMING.labelDuration,
+        ease: ENTRANCE_EASE,
+      }, 0);
+
+      lineContents.forEach((line, index) => {
+        timeline.to(line, {
+          opacity: 1,
+          y: 0,
+          duration: ENTRANCE_TIMING.wordDuration,
+          ease: ENTRANCE_EASE,
+        }, ENTRANCE_TIMING.lineStart + index * ENTRANCE_TIMING.lineStagger);
+      });
+
+      const lastQuoteLineEnd =
+        ENTRANCE_TIMING.lineStart
+        + (lineContents.length - 1) * ENTRANCE_TIMING.lineStagger
+        + ENTRANCE_TIMING.wordDuration;
+      const signatureStart = lastQuoteLineEnd;
+      timeline.to(signature, {
+        opacity: 1,
+        y: 0,
+        duration: ENTRANCE_TIMING.wordDuration,
+        ease: ENTRANCE_EASE,
+      }, signatureStart);
+      timeline.to(signature, {
+        color: getComputedStyle(story).getPropertyValue('--red').trim(),
+        duration: ENTRANCE_TIMING.accentDuration,
+        ease: ENTRANCE_EASE,
+      }, signatureStart + ENTRANCE_TIMING.accentStartOffset);
+      timeline.to(button, {
+        opacity: 1,
+        y: 0,
+        duration: ENTRANCE_TIMING.linkDuration,
+        ease: ENTRANCE_EASE,
+      }, signatureStart + ENTRANCE_TIMING.accentStartOffset + ENTRANCE_TIMING.accentDuration);
+
+      const startAnimation = () => {
+        if (hasStoryAnimationStarted.current) return;
+        hasStoryAnimationStarted.current = true;
+        startTimer = setTimeout(() => timeline.play(0), ABOUT_TIMELINE_DELAY * 1000);
+      };
+
+      stopObserving = observeEntranceOnce(story, ENTRANCE_TIMING, startAnimation);
+    }, story);
+
+    return () => {
+      stopObserving?.();
+      clearTimeout(startTimer);
+      context.revert();
+    };
+  }, [quoteLines]);
 
   useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -74,14 +289,40 @@ export function AboutExperience() {
       <div ref={rootRef} className="about-page">
         <PortraitReveal />
 
-        <section className="about-story" aria-labelledby="about-story-heading">
-          <p className="about-story__eyebrow">(ABOUT) — INES VARGA, B. 1988, PORTO</p>
-          <h1 id="about-story-heading" className="about-story__statement">
-            I grew up between a darkroom and a dance studio. Now I make pictures that keep moving after the shutter closes.
+        <section ref={storyRef} className="about-story" aria-labelledby="about-story-heading">
+          <p className="about-story__eyebrow">(ABOUT) — ZATEEF INTERNATIONAL, EST. 2023, SIALKOT</p>
+          <h1
+            ref={statementRef}
+            id="about-story-heading"
+            className="about-story__statement"
+            aria-label={ABOUT_STORY_QUOTE}
+          >
+            {quoteLines ? (
+              <span className="about-story__visual-lines" aria-hidden="true">
+                {quoteLines.map((line, index) => (
+                  <span className="about-story__line-mask" key={`line-${index}`}>
+                    <span className="about-story__line-content">
+                      {line.map((word, wordIndex) => (
+                        <span key={`${index}-${wordIndex}`}>
+                          {wordIndex > 0 ? ' ' : ''}
+                          {word}
+                        </span>
+                      ))}
+                    </span>
+                  </span>
+                ))}
+              </span>
+            ) : (
+              <span ref={fallbackRef} className="about-story__statement-copy" aria-hidden="true">
+                {ABOUT_STORY_QUOTE}
+              </span>
+            )}
           </h1>
-          <div className="about-story__signature">— Ines</div>
+          <div className="about-story__signature-mask">
+            <div className="about-story__signature">— Zateef International</div>
+          </div>
           <Link className="about-story__link" href="/contact">
-            Work with me <span aria-hidden="true">↗</span>
+            Request a quote <span aria-hidden="true">↗</span>
           </Link>
         </section>
 
@@ -124,8 +365,8 @@ export function AboutExperience() {
 
         <section className="about-set" aria-labelledby="about-set-heading">
           <div className="about-section__heading">
-            <p className="about-section__eyebrow">(ON SET)</p>
-            <h2 id="about-set-heading">In good company.</h2>
+            <p className="about-section__eyebrow">(INSIDE THE FACTORY)</p>
+            <h2 id="about-set-heading">Made with care.</h2>
           </div>
           <div className="about-set__gallery">
             {setImages.map((image, index) => (
@@ -148,8 +389,8 @@ export function AboutExperience() {
 
         <section className="about-recognition" aria-labelledby="about-recognition-heading">
           <div className="about-section__heading">
-            <p className="about-section__eyebrow">(RECOGNITION)</p>
-            <h2 id="about-recognition-heading">A few kind words.</h2>
+            <p className="about-section__eyebrow">(PROCESS)</p>
+            <h2 id="about-recognition-heading">Idea to doorstep.</h2>
           </div>
           <RecognitionList />
         </section>

@@ -151,7 +151,7 @@ export function SelectedWork() {
       <div className="selected-work__eyebrow">(02) — SELECTED WORK</div>
       <div className="selected-work__heading-row">
         <h2 id="selected-work-heading" className="selected-work__heading">
-          WORK <span>06</span>
+          WORK 
         </h2>
         <Link className="selected-work__all-link" href="/work">
           View all work <span aria-hidden="true">↗</span>

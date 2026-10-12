@@ -4,12 +4,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { CustomEase } from 'gsap/CustomEase';
-
-const INTRO_EASE = 'intro-premium';
-const INTRO_EASE_PATH = 'M0,0 C0.22,1 0.36,1 1,1';
-const LINE_START = 0.1;
-const LINE_STAGGER = 0.09;
+import {
+  createEntranceTimeline,
+  ENTRANCE_EASE,
+  ENTRANCE_TIMING,
+  observeEntranceOnce,
+  registerEntranceEase,
+} from '@/lib/entranceMotion';
 
 type StatementWord = {
   text: string;
@@ -36,16 +37,14 @@ export function IntroStatement() {
   const sectionRef = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
-    gsap.registerPlugin(CustomEase);
-
     const section = sectionRef.current;
     if (!section) return;
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    CustomEase.create(INTRO_EASE, INTRO_EASE_PATH);
+    registerEntranceEase();
 
-    let observer: IntersectionObserver | null = null;
+    let stopObserving: (() => void) | undefined;
     const context = gsap.context(() => {
       const labels = section.querySelectorAll<HTMLElement>('.intro-statement__topline > span');
       const yearCounter = section.querySelector<HTMLElement>('.intro-statement__year');
@@ -79,13 +78,8 @@ export function IntroStatement() {
         link,
         underline,
       ];
-      const timeline = gsap.timeline({
-        paused: true,
-        onStart: () => gsap.set(animatedElements, { willChange: 'transform, opacity, clip-path, color' }),
-        onComplete: () => {
-          gsap.set(animatedElements, { clearProps: 'willChange' });
-          section.classList.remove('is-animation-active');
-        },
+      const timeline = createEntranceTimeline(animatedElements, {
+        onComplete: () => section.classList.remove('is-animation-active'),
       });
       let hasStarted = false;
       const startAnimation = () => {
@@ -94,34 +88,45 @@ export function IntroStatement() {
         timeline.play(0);
       };
 
-      timeline.to(labels, { opacity: 1, y: 0, duration: 0.7, ease: INTRO_EASE }, 0);
+      timeline.to(labels, { opacity: 1, y: 0, duration: ENTRANCE_TIMING.labelDuration, ease: ENTRANCE_EASE }, 0);
       if (yearCounter) {
         const year = { value: 0 };
         timeline.to(year, {
           value: 2023,
-          duration: 1.4,
-          ease: INTRO_EASE,
+          duration: ENTRANCE_TIMING.yearDuration,
+          ease: ENTRANCE_EASE,
           roundProps: 'value',
           onUpdate: () => { yearCounter.textContent = String(Math.round(year.value)).padStart(4, '0'); },
         }, 0);
       }
 
       lines.forEach((line, index) => {
-        const lineStart = LINE_START + index * LINE_STAGGER;
+        const lineStart = ENTRANCE_TIMING.lineStart + index * ENTRANCE_TIMING.lineStagger;
         const lineWords = line.querySelectorAll<HTMLElement>('.intro-statement__word');
         const linePills = line.querySelectorAll<HTMLElement>('.intro-statement__chip');
 
-        timeline.to(lineWords, { opacity: 1, yPercent: 0, duration: 0.9, ease: INTRO_EASE }, lineStart);
+        timeline.to(lineWords, {
+          opacity: 1,
+          yPercent: 0,
+          duration: ENTRANCE_TIMING.wordDuration,
+          ease: ENTRANCE_EASE,
+        }, lineStart);
         linePills.forEach((pill) => {
           const image = pill.querySelector('img');
           timeline.to(pill, {
             opacity: 1,
             yPercent: 0,
             clipPath: 'inset(0 0% 0 0 round 999px)',
-            duration: 0.8,
-            ease: INTRO_EASE,
-          }, lineStart + 0.25);
-          if (image) timeline.to(image, { scale: 1, duration: 0.8, ease: INTRO_EASE }, lineStart + 0.25);
+            duration: ENTRANCE_TIMING.chipDuration,
+            ease: ENTRANCE_EASE,
+          }, lineStart + ENTRANCE_TIMING.chipStartOffset);
+          if (image) {
+            timeline.to(image, {
+              scale: 1,
+              duration: ENTRANCE_TIMING.chipDuration,
+              ease: ENTRANCE_EASE,
+            }, lineStart + ENTRANCE_TIMING.chipStartOffset);
+          }
         });
       });
 
@@ -131,34 +136,34 @@ export function IntroStatement() {
         if (lineIndex < 0) return;
         timeline.to(accent, {
           color: getComputedStyle(section).getPropertyValue('--statement-accent').trim(),
-          duration: 0.6,
-          ease: INTRO_EASE,
-        }, LINE_START + lineIndex * LINE_STAGGER + 0.4);
+          duration: ENTRANCE_TIMING.accentDuration,
+          ease: ENTRANCE_EASE,
+        }, ENTRANCE_TIMING.lineStart + lineIndex * ENTRANCE_TIMING.lineStagger + ENTRANCE_TIMING.accentStartOffset);
       });
 
-      timeline.to(paragraph, { opacity: 1, y: 0, duration: 0.8, ease: INTRO_EASE }, 0.9);
-      timeline.to(link, { opacity: 1, y: 0, duration: 0.7, ease: INTRO_EASE }, 1.1);
-      timeline.to(underline, { scaleX: 1, duration: 0.5, ease: INTRO_EASE }, 1.4);
+      timeline.to(paragraph, {
+        opacity: 1,
+        y: 0,
+        duration: ENTRANCE_TIMING.paragraphDuration,
+        ease: ENTRANCE_EASE,
+      }, ENTRANCE_TIMING.paragraphStart);
+      timeline.to(link, {
+        opacity: 1,
+        y: 0,
+        duration: ENTRANCE_TIMING.linkDuration,
+        ease: ENTRANCE_EASE,
+      }, ENTRANCE_TIMING.linkStart);
+      timeline.to(underline, {
+        scaleX: 1,
+        duration: ENTRANCE_TIMING.underlineDuration,
+        ease: ENTRANCE_EASE,
+      }, ENTRANCE_TIMING.underlineStart);
 
-      const isMobile = window.matchMedia('(max-width: 640px)').matches;
-      const threshold = isMobile ? 0.15 : 0.25;
-      observer = new IntersectionObserver(([entry]) => {
-        if (!entry.isIntersecting) return;
-        startAnimation();
-        observer?.disconnect();
-      }, { threshold });
-
-      observer.observe(section);
-      const bounds = section.getBoundingClientRect();
-      const visibleHeight = Math.max(0, Math.min(bounds.bottom, window.innerHeight) - Math.max(bounds.top, 0));
-      if (visibleHeight / bounds.height >= threshold) {
-        startAnimation();
-        observer.disconnect();
-      }
+      stopObserving = observeEntranceOnce(section, ENTRANCE_TIMING, startAnimation);
     }, section);
 
     return () => {
-      observer?.disconnect();
+      stopObserving?.();
       context.revert();
       section.classList.remove('is-animation-active');
     };
@@ -168,7 +173,7 @@ export function IntroStatement() {
     <section ref={sectionRef} className="intro-statement" aria-labelledby="intro-statement-title">
       <div className="intro-statement__topline">
         <span>(01) — WHO WE ARE</span>
-        <span>CUSTOM MANUFACTURING · SINCE [<span className="intro-statement__year">2023</span>]</span>
+        <span>CUSTOM MANUFACTURING · SINCE <span className="intro-statement__year">2023</span></span>
       </div>
 
       <h2
@@ -213,7 +218,7 @@ export function IntroStatement() {
       <div className="intro-statement__copy">
         <p>
           Custom sportswear and streetwear for brands that would rather be worn than talked about.
-          Based in [SIALKOT, PAKISTAN] — from first sample to final delivery.
+          Based in SIALKOT, PAKISTAN — from first sample to final delivery.
         </p>
       </div>
 

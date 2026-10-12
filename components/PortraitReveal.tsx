@@ -52,7 +52,6 @@ export function PortraitReveal() {
           {steps.map((step) => <span className="portrait-reveal__shutter" key={step} />)}
         </div>
       </div>
-      <p className="portrait-reveal__caption">(ABOUT) — INES VARGA, B. 1988, PORTO</p>
     </section>
   );
 }

@@ -40,7 +40,7 @@ export function WorkIndex() {
         <header className="work-index__intro">
           <p className="work-index__eyebrow">(INDEX) — SELECTED WORK 2019–26</p>
           <h1 className="work-index__title">
-            WORK <span>12</span>
+            WORK
           </h1>
           <LayoutGroup id="work-categories">
             <div className="work-index__filters" role="group" aria-label="Filter projects by category">
