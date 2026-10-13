@@ -2623,8 +2623,9 @@ select {
   text-transform: uppercase;
 }
 
+.recognition-table__head span:last-child,
 .recognition-table__year {
-  text-align: right;
+  text-align: center;
 }
 
 .contact-page {

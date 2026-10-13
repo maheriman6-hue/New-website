@@ -1,12 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { useLayoutEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AppShell } from '@/components/AppShell';
 import { PortraitReveal } from '@/components/PortraitReveal';
+import { QuoteRequestModal } from '@/components/QuoteRequestModal';
 import { RecognitionList } from '@/components/RecognitionList';
 import {
   createEntranceTimeline,
@@ -103,6 +103,7 @@ export function AboutExperience() {
   const hasStoryAnimationStarted = useRef(false);
   const [quoteLines, setQuoteLines] = useState<string[][] | null>(null);
   const [activeService, setActiveService] = useState(0);
+  const [isQuoteOpen, setIsQuoteOpen] = useState(false);
 
   useLayoutEffect(() => {
     const story = storyRef.current;
@@ -321,9 +322,13 @@ export function AboutExperience() {
           <div className="about-story__signature-mask">
             <div className="about-story__signature">— Zateef International</div>
           </div>
-          <Link className="about-story__link" href="/contact">
+          <button
+            className="about-story__link"
+            type="button"
+            onClick={() => setIsQuoteOpen(true)}
+          >
             Request a quote <span aria-hidden="true">↗</span>
-          </Link>
+          </button>
         </section>
 
         <section className="about-stats" aria-label="Studio experience">
@@ -395,6 +400,7 @@ export function AboutExperience() {
           <RecognitionList />
         </section>
       </div>
+      {isQuoteOpen && <QuoteRequestModal onClose={() => setIsQuoteOpen(false)} />}
     </AppShell>
   );
 }
