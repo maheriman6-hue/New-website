@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AppShell } from '@/components/AppShell';
@@ -89,6 +89,9 @@ const services = [
   { name: 'DELIVERY', details: 'PACKING · TRACKED SHIPMENTS · DOOR TO DOOR' },
 ];
 
+const HIGHLIGHT_LINE = 0.5;
+const SERVICE_HYSTERESIS_PX = 12;
+
 const setImages = [
   { src: '/media/drift.webp', alt: 'Landscape between takes at golden hour', caption: 'ON THE STITCHING FLOOR — SIALKOT' },
   { src: '/media/terracotta-hour.webp', alt: 'Objects arranged on a studio set', caption: 'PACKED FOR DISPATCH — 2026' },
@@ -100,10 +103,75 @@ export function AboutExperience() {
   const storyRef = useRef<HTMLElement | null>(null);
   const statementRef = useRef<HTMLHeadingElement | null>(null);
   const fallbackRef = useRef<HTMLSpanElement | null>(null);
+  const servicesListRef = useRef<HTMLUListElement | null>(null);
   const hasStoryAnimationStarted = useRef(false);
+  const activeServiceRef = useRef(-1);
+  const scrollServiceRef = useRef<number | null>(null);
+  const manualServiceRef = useRef<number | null>(null);
   const [quoteLines, setQuoteLines] = useState<string[][] | null>(null);
-  const [activeService, setActiveService] = useState(0);
+  const [activeService, setActiveService] = useState(-1);
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
+
+  const activateService = useCallback((index: number) => {
+    if (activeServiceRef.current === index) return;
+    activeServiceRef.current = index;
+    setActiveService(index);
+  }, []);
+
+  useLayoutEffect(() => {
+    const list = servicesListRef.current;
+    if (!list) return;
+
+    let frameId = 0;
+    let disposed = false;
+
+    const updateActiveService = () => {
+      frameId = 0;
+      if (disposed) return;
+
+      const rows = Array.from(list.querySelectorAll<HTMLElement>('.about-services__item'));
+      if (rows.length === 0) return;
+
+      const referenceY = window.innerHeight * HIGHLIGHT_LINE;
+      const distances = rows.map((row) => {
+        const bounds = row.getBoundingClientRect();
+        return Math.abs((bounds.top + bounds.bottom) / 2 - referenceY);
+      });
+      const closestIndex = distances.reduce(
+        (closest, distance, index) => distance < distances[closest] ? index : closest,
+        0,
+      );
+      const currentIndex = scrollServiceRef.current;
+      const nextIndex = currentIndex === null
+        || closestIndex === currentIndex
+        || distances[closestIndex] + SERVICE_HYSTERESIS_PX <= distances[currentIndex]
+        ? closestIndex
+        : currentIndex;
+
+      scrollServiceRef.current = nextIndex;
+      if (manualServiceRef.current === null) activateService(nextIndex);
+    };
+
+    const scheduleUpdate = () => {
+      if (!disposed && frameId === 0) frameId = window.requestAnimationFrame(updateActiveService);
+    };
+    const onScroll = () => {
+      manualServiceRef.current = null;
+      scheduleUpdate();
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+    updateActiveService();
+    void document.fonts.ready.then(scheduleUpdate);
+
+    return () => {
+      disposed = true;
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', scheduleUpdate);
+    };
+  }, [activateService]);
 
   useLayoutEffect(() => {
     const story = storyRef.current;
@@ -343,21 +411,50 @@ export function AboutExperience() {
         <section
           className="about-services"
           aria-labelledby="about-services-heading"
-          onMouseLeave={() => setActiveService(-1)}
+          onMouseLeave={() => {
+            manualServiceRef.current = null;
+            activateService(scrollServiceRef.current ?? 0);
+          }}
         >
           <p className="about-section__eyebrow">(SERVICES)</p>
           <h2 className="about-section__sr-heading" id="about-services-heading">What I do</h2>
-          <ul className={`about-services__list${activeService >= 0 ? ' has-active' : ''}`}>
+          <ul
+            ref={servicesListRef}
+            className="about-services__list"
+            data-has-active={activeService >= 0}
+            onMouseMove={(event) => {
+              if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+              const target = event.target;
+              if (!(target instanceof Element)) return;
+              const row = target.closest<HTMLElement>('.about-services__item');
+              if (!row || !event.currentTarget.contains(row)) return;
+              const index = Number(row.dataset.serviceIndex);
+              if (!Number.isInteger(index)) return;
+              manualServiceRef.current = index;
+              activateService(index);
+            }}
+          >
             {services.map((service, index) => (
               <li
-                className={`about-services__item${activeService === index ? ' is-active' : ''}`}
+                className="about-services__item"
+                data-active={activeService === index}
+                data-service-index={index}
                 key={service.name}
                 tabIndex={0}
-                onMouseEnter={() => setActiveService(index)}
-                onFocus={() => setActiveService(index)}
+                onMouseEnter={() => {
+                  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+                  manualServiceRef.current = index;
+                  activateService(index);
+                }}
+                onFocus={(event) => {
+                  if (!event.currentTarget.matches(':focus-visible')) return;
+                  manualServiceRef.current = index;
+                  activateService(index);
+                }}
                 onBlur={(event) => {
                   if (!event.currentTarget.parentElement?.contains(event.relatedTarget as Node | null)) {
-                    setActiveService(-1);
+                    manualServiceRef.current = null;
+                    activateService(scrollServiceRef.current ?? 0);
                   }
                 }}
               >
