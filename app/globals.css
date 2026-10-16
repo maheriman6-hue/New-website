@@ -2623,6 +2623,7 @@ select {
   overflow: hidden;
   background: var(--paper);
   color: var(--ink);
+  -webkit-text-size-adjust: 100%;
 }
 
 .contact-header {
@@ -2673,11 +2674,11 @@ select {
 
 .contact-page__title-line {
   display: block;
-  overflow: hidden;
+  overflow-x: visible;
+  overflow-y: clip;
   margin: -0.12em 0;
   padding: 0.12em 0;
   line-height: 0.68;
-  contain: paint;
 }
 
 .contact-page__title-line-content {
@@ -2689,53 +2690,79 @@ select {
   display: inline-block;
 }
 
+.contact-page__email-container {
+  display: block;
+  width: 100%;
+  margin-top: clamp(2rem, 5vw, 5rem);
+  container-type: inline-size;
+}
+
 .contact-page__email {
+  --contact-email-max-size: 8rem;
+  --contact-email-desktop-size: clamp(2rem, 7.4vw, var(--contact-email-max-size));
+  /* Measured at 128px: 9.93em natural width plus a 3% safety margin. */
+  --contact-email-width-em: 10.24;
   position: relative;
   display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  flex-wrap: nowrap;
   align-items: baseline;
-  gap: clamp(0.5rem, 1.5vw, 1.5rem);
-  margin-top: clamp(2rem, 5vw, 5rem);
+  gap: 0.1875em;
+  margin: 0;
   border-bottom: 1px solid currentColor;
   padding-bottom: 0.08em;
   font-family: var(--font-serif), serif;
-  font-size: clamp(2rem, 7.4vw, 8rem);
+  font-size: min(
+    var(--contact-email-desktop-size),
+    var(--contact-email-fit-size, calc(100cqw / var(--contact-email-width-em)))
+  );
   font-style: italic;
   letter-spacing: -0.055em;
   line-height: 1;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
-.contact-page__email-source {
-  display: block;
+.contact-page__email,
+.contact-page__email * {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
-.contact-page__email-source.is-measure {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: calc(100% - clamp(0.5rem, 1.5vw, 1.5rem) - 0.55em);
-  visibility: hidden;
-  pointer-events: none;
+@supports not (width: 1cqw) {
+  .contact-page__email {
+    font-size: min(
+      var(--contact-email-desktop-size),
+      var(--contact-email-fit-size, calc(
+        (100vw - 2 * clamp(1rem, 2.3vw, 2.5rem)) / var(--contact-email-width-em)
+      ))
+    );
+  }
 }
 
 .contact-page__email-lines {
   display: flex;
-  min-width: 0;
-  flex-direction: column;
+  flex: none;
+  min-width: max-content;
 }
 
 .contact-page__email-line-mask {
   display: block;
   flex: none;
-  overflow: hidden;
+  overflow-x: visible;
+  overflow-y: clip;
   margin: -0.12em 0;
   padding: 0.12em 0;
   line-height: 1;
-  contain: paint;
 }
 
 .contact-page__email-line-content {
-  display: inline-block;
+  display: block;
+  width: max-content;
   white-space: nowrap;
 }
 
@@ -2884,7 +2911,6 @@ select {
 html[data-contact-animation="pending"] .contact-page__eyebrow,
 html[data-contact-animation="pending"] .contact-page__title-source,
 html[data-contact-animation="pending"] .contact-page__title-word,
-html[data-contact-animation="pending"] .contact-page__email-source,
 html[data-contact-animation="pending"] .contact-page__email-line-content,
 html[data-contact-animation="pending"] .contact-page__email-arrow,
 html[data-contact-animation="pending"] .contact-page__detail h2,
@@ -2895,7 +2921,6 @@ html[data-contact-animation="pending"] .contact-page__action-wrap {
 }
 
 html[data-contact-animation="pending"] .contact-page__title-word,
-html[data-contact-animation="pending"] .contact-page__email-source,
 html[data-contact-animation="pending"] .contact-page__email-line-content {
   transform: translateY(calc(100% + 0.24em + 4px));
 }
@@ -3044,8 +3069,7 @@ html[data-contact-animation="pending"] .contact-page__email-underline {
   }
 
   .contact-page__email {
-    gap: 0.45rem;
-    font-size: clamp(1.8rem, 9vw, 4rem);
+    --contact-email-desktop-size: clamp(1.8rem, 9vw, 4rem);
   }
 
   .contact-page__details {
@@ -3074,5 +3098,10 @@ html[data-contact-animation="pending"] .contact-page__email-underline {
     padding: 0 1.15rem;
     font-size: 0.88rem;
   }
+}
 
+@media (min-width: 501px) and (max-width: 700px) {
+  .contact-page__email {
+    --contact-email-desktop-size: clamp(1.8rem, calc(3.4vw + 28px), 4rem);
+  }
 }

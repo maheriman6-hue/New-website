@@ -8,14 +8,35 @@ import { QuoteRequestModal } from '@/components/QuoteRequestModal';
 import {
   createEntranceTimeline,
   ENTRANCE_EASE,
-  ENTRANCE_TIMING,
   registerEntranceEase,
 } from '@/lib/entranceMotion';
 
-const CONTACT_ENTRANCE_THRESHOLD = {
-  desktopThreshold: 0.2,
-  mobileThreshold: 0.1,
+const CONTACT_TIMING = {
+  desktopThreshold: 0.1,
+  mobileThreshold: 0.08,
+  labelDuration: 0.5,
+  labelOffset: 12,
+  headingDuration: 0.65,
+  headingStagger: 0.065,
+  emailDuration: 0.65,
+  emailStartOffset: 0.15,
+  arrowDuration: 0.1,
+  underlineDuration: 0.4,
+  dividerDuration: 0.45,
+  detailTitleStart: 0.06,
+  detailTitleDuration: 0.4,
+  detailTitleOffset: 8,
+  detailBodyStart: 0.12,
+  detailBodyDuration: 0.45,
+  detailBodyStagger: 0.05,
+  blockStagger: 0.07,
+  actionStartDelay: 0.1,
+  actionDuration: 0.45,
+  actionStagger: 0.06,
+  actionOffset: 12,
 };
+
+const CONTACT_EMAIL = 'zateefinternational@gmail.com';
 
 function measureWrappedLines(element: HTMLElement | null): string[] | null {
   const textNode = element?.firstChild;
@@ -50,15 +71,74 @@ function areLinesEqual(left: string[], right: string[]) {
 
 export function ContactExperience() {
   const panelRef = useRef<HTMLElement | null>(null);
+  const emailContainerRef = useRef<HTMLDivElement | null>(null);
+  const emailLinkRef = useRef<HTMLAnchorElement | null>(null);
   const titleSourceRef = useRef<HTMLSpanElement | null>(null);
-  const emailSourceRef = useRef<HTMLSpanElement | null>(null);
   const heroTimelineRef = useRef<gsap.core.Timeline | null>(null);
   const heroContextRef = useRef<gsap.Context | null>(null);
   const heroHasStartedRef = useRef(false);
   const heroHasFinishedRef = useRef(false);
   const [titleLines, setTitleLines] = useState<string[] | null>(null);
-  const [emailLines, setEmailLines] = useState<string[] | null>(null);
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    const container = emailContainerRef.current;
+    const link = emailLinkRef.current;
+    if (!container || !link) return;
+
+    let animationFrame = 0;
+    let disposed = false;
+    let lastContainerWidth = container.clientWidth;
+
+    const fitEmail = () => {
+      if (disposed) return;
+
+      link.style.removeProperty('--contact-email-fit-size');
+      for (let pass = 0; pass < 2; pass += 1) {
+        const containerWidth = container.clientWidth;
+        const linkWidth = link.scrollWidth;
+        if (containerWidth <= 0 || linkWidth <= containerWidth) return;
+
+        const currentSize = Number.parseFloat(getComputedStyle(link).fontSize);
+        const nextSize = Math.max(14, currentSize * (containerWidth / linkWidth) * 0.98);
+        link.style.setProperty('--contact-email-fit-size', `${nextSize}px`);
+      }
+    };
+
+    const scheduleFit = () => {
+      if (animationFrame) return;
+      animationFrame = requestAnimationFrame(() => {
+        animationFrame = 0;
+        fitEmail();
+      });
+    };
+
+    const observer = new ResizeObserver(() => {
+      const width = container.clientWidth;
+      if (width === lastContainerWidth) return;
+      lastContainerWidth = width;
+      scheduleFit();
+    });
+    observer.observe(container);
+    window.addEventListener('resize', scheduleFit);
+    window.addEventListener('orientationchange', scheduleFit);
+    window.visualViewport?.addEventListener('resize', scheduleFit);
+
+    fitEmail();
+    void document.fonts.ready.then(() => {
+      if (!disposed) fitEmail();
+    });
+
+    return () => {
+      disposed = true;
+      observer.disconnect();
+      window.removeEventListener('resize', scheduleFit);
+      window.removeEventListener('orientationchange', scheduleFit);
+      window.visualViewport?.removeEventListener('resize', scheduleFit);
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      link.style.removeProperty('--contact-email-fit-size');
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -81,16 +161,13 @@ export function ContactExperience() {
 
     const splitText = () => {
       const measuredTitle = measureWrappedLines(titleSourceRef.current);
-      const measuredEmail = measureWrappedLines(emailSourceRef.current);
-      if (!measuredTitle || !measuredEmail) {
-        console.error('Unable to measure the Contact heading and email line breaks.');
+      if (!measuredTitle) {
+        console.error('Unable to measure the Contact heading line breaks.');
         setTitleLines(['SAY']);
-        setEmailLines(['zateefinternational@gmail.com']);
         return;
       }
 
       setTitleLines((current) => current && areLinesEqual(current, measuredTitle) ? current : measuredTitle);
-      setEmailLines((current) => current && areLinesEqual(current, measuredEmail) ? current : measuredEmail);
     };
 
     if (!reducedMotion) {
@@ -141,15 +218,34 @@ export function ContactExperience() {
     const context = gsap.context(() => {
       const detailTimelines = new Map<HTMLElement, gsap.core.Timeline>();
       const detailStarted = new Set<HTMLElement>();
-      const detailCompleted = new Set<HTMLElement>();
       const detailTimers: ReturnType<typeof setTimeout>[] = [];
+      const fallbackCleanups: Array<() => void> = [];
+      const IntersectionObserverClass = Reflect.get(window, 'IntersectionObserver') as
+        typeof IntersectionObserver | undefined;
       const detailObserverThreshold = window.matchMedia('(max-width: 640px)').matches
-        ? CONTACT_ENTRANCE_THRESHOLD.mobileThreshold
-        : CONTACT_ENTRANCE_THRESHOLD.desktopThreshold;
-      let actionsVisible = false;
+        ? CONTACT_TIMING.mobileThreshold
+        : CONTACT_TIMING.desktopThreshold;
       let actionsStarted = false;
       let observer: IntersectionObserver | undefined;
       let actionTimeline: gsap.core.Timeline | undefined;
+      let actionTimer: ReturnType<typeof setTimeout> | undefined;
+
+      const isVisibleAtThreshold = (target: HTMLElement) => {
+        const bounds = target.getBoundingClientRect();
+        if (bounds.width === 0 || bounds.height === 0) return false;
+        const visibleWidth = Math.max(0, Math.min(bounds.right, window.innerWidth) - Math.max(bounds.left, 0));
+        const visibleHeight = Math.max(0, Math.min(bounds.bottom, window.innerHeight) - Math.max(bounds.top, 0));
+        return (visibleWidth * visibleHeight) / (bounds.width * bounds.height) >= detailObserverThreshold;
+      };
+
+      const startActions = () => {
+        if (actionsStarted) return;
+        actionsStarted = true;
+        actionTimer = setTimeout(
+          () => actionTimeline?.play(0),
+          CONTACT_TIMING.actionStartDelay * 1000,
+        );
+      };
 
       detailBlocks.forEach((block) => {
         const divider = block.querySelector<HTMLElement>('.contact-page__divider');
@@ -159,48 +255,42 @@ export function ContactExperience() {
 
         const animatedElements = [divider, title, ...body];
         gsap.set(divider, { scaleX: 0, transformOrigin: 'left center' });
-        gsap.set([title, ...body], { opacity: 0, y: ENTRANCE_TIMING.labelOffset });
+        gsap.set(title, { opacity: 0, y: CONTACT_TIMING.detailTitleOffset });
+        gsap.set(body, { opacity: 0, y: CONTACT_TIMING.labelOffset });
 
         const timeline = createEntranceTimeline(animatedElements, {
           willChange: 'transform, opacity',
           onComplete: () => {
             gsap.set(animatedElements, { clearProps: 'willChange,transform,opacity' });
             block.dataset.entranceComplete = 'true';
-            detailCompleted.add(block);
-            if (actionsVisible && detailCompleted.size === detailBlocks.length) {
-              actionTimeline?.play(0);
-              actionsStarted = true;
-            }
           },
         });
 
         timeline.to(divider, {
           scaleX: 1,
-          duration: ENTRANCE_TIMING.underlineDuration,
+          duration: CONTACT_TIMING.dividerDuration,
           ease: ENTRANCE_EASE,
         }, 0);
         timeline.to(title, {
           opacity: 1,
           y: 0,
-          duration: ENTRANCE_TIMING.labelDuration,
+          duration: CONTACT_TIMING.detailTitleDuration,
           ease: ENTRANCE_EASE,
-        }, ENTRANCE_TIMING.underlineDuration);
+        }, CONTACT_TIMING.detailTitleStart);
         body.forEach((element, index) => {
           timeline.to(element, {
             opacity: 1,
             y: 0,
-            duration: ENTRANCE_TIMING.paragraphDuration,
+            duration: CONTACT_TIMING.detailBodyDuration,
             ease: ENTRANCE_EASE,
-          }, ENTRANCE_TIMING.underlineDuration
-            + ENTRANCE_TIMING.labelDuration
-            + index * 0.07);
+          }, CONTACT_TIMING.detailBodyStart + index * CONTACT_TIMING.detailBodyStagger);
         });
 
         detailTimelines.set(block, timeline);
       });
 
       const actionWrappers = Array.from(actions.querySelectorAll<HTMLElement>('.contact-page__action-wrap'));
-      gsap.set(actionWrappers, { opacity: 0, y: ENTRANCE_TIMING.labelOffset });
+      gsap.set(actionWrappers, { opacity: 0, y: CONTACT_TIMING.actionOffset });
       actionTimeline = createEntranceTimeline(actionWrappers, {
         willChange: 'transform, opacity',
         onComplete: () => {
@@ -210,60 +300,97 @@ export function ContactExperience() {
       actionTimeline.to(actionWrappers, {
         opacity: 1,
         y: 0,
-        duration: ENTRANCE_TIMING.linkDuration,
-        stagger: 0.09,
+        duration: CONTACT_TIMING.actionDuration,
+        stagger: CONTACT_TIMING.actionStagger,
         ease: ENTRANCE_EASE,
       }, 0);
 
       const targets = Array.from(detailTimelines.keys());
-      if ('IntersectionObserver' in window) {
-        observer = new IntersectionObserver((entries) => {
+      if (IntersectionObserverClass) {
+        observer = new IntersectionObserverClass((entries) => {
           const entering = entries
-            .filter((entry) => entry.isIntersecting)
+            .filter((entry) => entry.isIntersecting
+              && entry.intersectionRatio >= detailObserverThreshold
+              && !detailStarted.has(entry.target as HTMLElement))
             .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top
               || left.boundingClientRect.left - right.boundingClientRect.left);
 
           entering.forEach((entry, index) => {
             const block = entry.target as HTMLElement;
             const timeline = detailTimelines.get(block);
-            if (!timeline || detailStarted.has(block)) return;
+            if (!timeline) return;
             detailStarted.add(block);
-            const timer = setTimeout(() => timeline.play(0), index * 120);
+            const timer = setTimeout(
+              () => timeline.play(0),
+              index * CONTACT_TIMING.blockStagger * 1000,
+            );
             detailTimers.push(timer);
           });
         }, { threshold: detailObserverThreshold });
 
         targets.forEach((target) => observer?.observe(target));
       } else {
-        targets.forEach((target) => detailTimelines.get(target)?.play(0));
+        const checkVisibleDetails = () => {
+          const entering = targets
+            .filter((target) => !detailStarted.has(target) && isVisibleAtThreshold(target))
+            .sort((left, right) => {
+              const leftBounds = left.getBoundingClientRect();
+              const rightBounds = right.getBoundingClientRect();
+              return leftBounds.top - rightBounds.top || leftBounds.left - rightBounds.left;
+            });
+          entering.forEach((target, index) => {
+            detailStarted.add(target);
+            const timeline = detailTimelines.get(target);
+            if (!timeline) return;
+            const timer = setTimeout(
+              () => timeline.play(0),
+              index * CONTACT_TIMING.blockStagger * 1000,
+            );
+            detailTimers.push(timer);
+          });
+        };
+        window.addEventListener('scroll', checkVisibleDetails, { passive: true });
+        window.addEventListener('resize', checkVisibleDetails);
+        fallbackCleanups.push(() => {
+          window.removeEventListener('scroll', checkVisibleDetails);
+          window.removeEventListener('resize', checkVisibleDetails);
+        });
+        checkVisibleDetails();
       }
 
       let actionObserver: IntersectionObserver | undefined;
-      if ('IntersectionObserver' in window) {
-        actionObserver = new IntersectionObserver(([entry]) => {
-          if (!entry?.isIntersecting || actionsVisible) return;
-          actionsVisible = true;
-          if (detailCompleted.size === detailBlocks.length && !actionsStarted) {
-            actionTimeline?.play(0);
-            actionsStarted = true;
-          }
+      if (IntersectionObserverClass) {
+        actionObserver = new IntersectionObserverClass(([entry]) => {
+          if (!entry?.isIntersecting || entry.intersectionRatio < detailObserverThreshold) return;
+          startActions();
           actionObserver?.disconnect();
         }, { threshold: detailObserverThreshold });
       }
 
       if (actionObserver) actionObserver.observe(actions);
-      else {
-        actionsVisible = true;
-        if (detailCompleted.size === detailBlocks.length) {
-          actionTimeline?.play(0);
-          actionsStarted = true;
-        }
+      else if (isVisibleAtThreshold(actions)) {
+        startActions();
+      } else {
+        const checkActionsVisible = () => {
+          if (!isVisibleAtThreshold(actions)) return;
+          startActions();
+          window.removeEventListener('scroll', checkActionsVisible);
+          window.removeEventListener('resize', checkActionsVisible);
+        };
+        window.addEventListener('scroll', checkActionsVisible, { passive: true });
+        window.addEventListener('resize', checkActionsVisible);
+        fallbackCleanups.push(() => {
+          window.removeEventListener('scroll', checkActionsVisible);
+          window.removeEventListener('resize', checkActionsVisible);
+        });
       }
 
       return () => {
         observer?.disconnect();
         actionObserver?.disconnect();
         detailTimers.forEach(clearTimeout);
+        fallbackCleanups.forEach((cleanup) => cleanup());
+        clearTimeout(actionTimer);
       };
     }, panel);
 
@@ -278,7 +405,7 @@ export function ContactExperience() {
 
   useLayoutEffect(() => {
     const panel = panelRef.current;
-    if (!panel || !titleLines || !emailLines || heroHasStartedRef.current) return;
+    if (!panel || !titleLines || heroHasStartedRef.current) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       delete document.documentElement.dataset.contactAnimation;
       return;
@@ -294,22 +421,21 @@ export function ContactExperience() {
     const underline = panel.querySelector<HTMLElement>('.contact-page__email-underline');
     if (!eyebrow || !arrow || !underline
       || titleWords.length !== titleLines.length
-      || emailContents.length !== emailLines.length) return;
+      || emailContents.length !== 1) return;
 
     registerEntranceEase();
-    const emailMasks = emailContents.map((line) => line.parentElement);
+    const emailMask = emailContents[0].parentElement;
     const animatedElements = [eyebrow, ...titleWords.flat(), ...emailContents, arrow, underline];
-    gsap.set(eyebrow, { opacity: 0, y: ENTRANCE_TIMING.labelOffset });
+    gsap.set(eyebrow, { opacity: 0, y: CONTACT_TIMING.labelOffset });
     titleWords.forEach((lineWords, index) => {
       const mask = titleWordLines[index];
       lineWords.forEach((word) => {
         gsap.set(word, { opacity: 0, y: mask.getBoundingClientRect().height + 4 });
       });
     });
-    emailContents.forEach((line, index) => {
-      const mask = emailMasks[index];
-      if (mask) gsap.set(line, { opacity: 0, y: mask.getBoundingClientRect().height + 4 });
-    });
+    if (emailMask) {
+      gsap.set(emailContents[0], { opacity: 0, y: emailMask.getBoundingClientRect().height + 4 });
+    }
     gsap.set(arrow, { opacity: 0 });
     gsap.set(underline, { scaleX: 0, transformOrigin: 'left center' });
 
@@ -327,47 +453,40 @@ export function ContactExperience() {
       timeline.to(eyebrow, {
         opacity: 1,
         y: 0,
-        duration: ENTRANCE_TIMING.labelDuration,
+        duration: CONTACT_TIMING.labelDuration,
         ease: ENTRANCE_EASE,
       }, 0);
 
-      const titleStart = ENTRANCE_TIMING.labelDuration;
-      const emailStart = titleStart
-        + ENTRANCE_TIMING.lineStart
-        + (titleWords.length - 1) * ENTRANCE_TIMING.lineStagger
-        + ENTRANCE_TIMING.wordDuration;
+      const titleStart = CONTACT_TIMING.labelDuration;
+      const emailStart = titleStart + CONTACT_TIMING.emailStartOffset;
 
       titleWords.forEach((lineWords, index) => {
         timeline.to(lineWords, {
           opacity: 1,
           y: 0,
-          duration: ENTRANCE_TIMING.wordDuration,
+          duration: CONTACT_TIMING.headingDuration,
           ease: ENTRANCE_EASE,
-        }, titleStart + ENTRANCE_TIMING.lineStart + index * ENTRANCE_TIMING.lineStagger);
+        }, titleStart + index * CONTACT_TIMING.headingStagger);
       });
 
-      emailContents.forEach((line, index) => {
-        timeline.to(line, {
-          opacity: 1,
-          y: 0,
-          duration: ENTRANCE_TIMING.wordDuration,
-          ease: ENTRANCE_EASE,
-        }, emailStart + index * ENTRANCE_TIMING.lineStagger);
-      });
+      timeline.to(emailContents[0], {
+        opacity: 1,
+        y: 0,
+        duration: CONTACT_TIMING.emailDuration,
+        ease: ENTRANCE_EASE,
+      }, emailStart);
 
-      const emailEnd = emailStart
-        + (emailContents.length - 1) * ENTRANCE_TIMING.lineStagger
-        + ENTRANCE_TIMING.wordDuration;
+      const emailEnd = emailStart + CONTACT_TIMING.emailDuration;
       timeline.to(arrow, {
         opacity: 1,
-        duration: ENTRANCE_TIMING.linkDuration,
+        duration: CONTACT_TIMING.arrowDuration,
         ease: ENTRANCE_EASE,
       }, emailEnd);
       timeline.to(underline, {
         scaleX: 1,
-        duration: ENTRANCE_TIMING.underlineDuration,
+        duration: CONTACT_TIMING.underlineDuration,
         ease: ENTRANCE_EASE,
-      }, emailEnd + ENTRANCE_TIMING.linkDuration);
+      }, emailStart);
 
       heroHasStartedRef.current = true;
       heroTimelineRef.current = timeline;
@@ -375,7 +494,7 @@ export function ContactExperience() {
       timeline.play(0);
     }, panel);
     heroContextRef.current = context;
-  }, [emailLines, titleLines]);
+  }, [titleLines]);
 
   useLayoutEffect(() => () => {
     heroContextRef.current?.revert();
@@ -419,31 +538,22 @@ export function ContactExperience() {
               SAY
             </span>
           </h1>
-          <a
-            className="contact-page__email"
-            href="mailto:zateefinternational@gmail.com"
-            aria-label="zateefinternational@gmail.com"
-          >
-            {emailLines && (
-              <span className="contact-page__email-lines" aria-label="zateefinternational@gmail.com">
-                {emailLines.map((line, index) => (
-                  <span className="contact-page__email-line-mask" key={`email-line-${index}`}>
-                    <span className="contact-page__email-line-content" aria-hidden="true">{line}</span>
-                  </span>
-                ))}
-              </span>
-            )}
-            <span
-              ref={emailSourceRef}
-              className={`contact-page__email-source${emailLines ? ' is-measure' : ''}`}
-              aria-hidden={emailLines ? 'true' : undefined}
-              aria-label={emailLines ? undefined : 'zateefinternational@gmail.com'}
+          <div ref={emailContainerRef} className="contact-page__email-container">
+            <a
+              ref={emailLinkRef}
+              className="contact-page__email"
+              href={`mailto:${CONTACT_EMAIL}`}
+              aria-label={CONTACT_EMAIL}
             >
-              zateefinternational@gmail.com
-            </span>
-            <span className="contact-page__email-arrow" aria-hidden="true">↗</span>
-            <span className="contact-page__email-underline" aria-hidden="true" />
-          </a>
+              <span className="contact-page__email-lines" aria-label={CONTACT_EMAIL}>
+                <span className="contact-page__email-line-mask">
+                  <span className="contact-page__email-line-content" aria-hidden="true">{CONTACT_EMAIL}</span>
+                </span>
+              </span>
+              <span className="contact-page__email-arrow" aria-hidden="true">↗</span>
+              <span className="contact-page__email-underline" aria-hidden="true" />
+            </a>
+          </div>
 
           <div className="contact-page__details">
             <section className="contact-page__detail" aria-labelledby="contact-commissions">
