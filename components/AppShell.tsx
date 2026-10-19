@@ -96,8 +96,8 @@ export function AppShell({
       >
         <div className="footer-motion__rule" />
 
-        <div className="flex flex-col gap-8 pt-6 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
-          <div className="min-w-[180px]">
+        <div className="grid grid-cols-2 items-start gap-x-4 gap-y-7 pt-6 sm:grid-cols-3 sm:gap-x-8 lg:gap-8">
+          <div className="min-w-0">
             <div className="mb-6 space-y-3 text-[15px]">
               <Link href="/work" className="block text-[#f5f1ea]">Work</Link>
               <Link href="/about" className="block text-[#f5f1ea]">About</Link>
@@ -111,15 +111,15 @@ export function AppShell({
             </div>
           </div>
 
-          <div className="flex min-w-[180px] flex-col gap-3 text-[17px] text-[#f5f1ea]">
+          <div className="col-start-1 row-start-2 flex min-w-0 flex-col gap-2.5 text-[15px] leading-relaxed text-[#f5f1ea] sm:col-start-auto sm:row-start-auto sm:text-[17px]">
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#f5f1ea]/75">Social</div>
             <div><a href="https://www.instagram.com/zateef_international?mdxt=MW12c3MONDIKNmVjMg==" target='_blank' rel="noopener noreferrer">Instagram</a></div>
             <div>LinkedIn</div>
           </div>
 
-          <div className="flex min-w-[220px] flex-col gap-3 text-[17px] text-[#f5f1ea]">
+          <div className="col-start-2 row-start-1 flex min-w-0 flex-col gap-2.5 text-[15px] leading-relaxed text-[#f5f1ea] sm:col-start-auto sm:row-start-auto sm:text-[17px]">
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#f5f1ea]/75">Contact</div>
-            <div>zateefinternational@gmail.com</div>
+            <a className="break-words" href="mailto:zateefinternational@gmail.com">zateefinternational@gmail.com</a>
             <div><a href="https://api.whatsapp.com/send/?phone=923289615985&text=Hi%2C+I+want+to+request+a+quote+for+clothing+manufacturing.&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">+92 328 9615 985</a></div>
           </div>
         </div>

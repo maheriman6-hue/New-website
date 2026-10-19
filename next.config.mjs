@@ -3,6 +3,9 @@ import os from 'node:os';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  images: {
+    qualities: [75, 90],
+  },
   ...(process.env.NODE_ENV !== 'production' && {
     allowedDevOrigins: [
       'localhost',

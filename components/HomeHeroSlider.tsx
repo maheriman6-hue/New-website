@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import { getImageProps } from 'next/image';
 import {
   memo,
   useCallback,
@@ -17,8 +17,9 @@ type Slide = {
   client: string;
   category: string;
   image?: string;
+  mobileImage?: string;
+  imageSizes?: string;
   alt?: string;
-  unoptimized?: boolean;
   imagePosition?: CSSProperties['objectPosition'];
   strongBottomShade?: boolean;
 };
@@ -34,22 +35,26 @@ const slides: Slide[] = [
     client: 'SPORTSWEAR',
     category: 'PERFORMANCE FABRICS — 2026',
     image: '/media/sportswear-hero.jpg',
+    mobileImage: '/media/mobile/sportswear-m.jpg',
+    imageSizes: 'max(100vw, 227vh)',
     alt: 'Man and woman wearing black performance sportswear',
-    unoptimized: true,
   },
   {
     title: 'Street Ready',
     client: 'STREETWEAR',
     category: 'HOODIES & CARGOS — 2026',
     image: '/media/streetwear-hero.jpg',
+    mobileImage: '/media/mobile/streetwear-m.jpg',
+    imageSizes: 'max(100vw, 227vh)',
     alt: 'Man in a black hoodie and cargo pants against a concrete wall',
-    unoptimized: true,
   },
   {
     title: 'Stitch by Stitch',
     client: 'IN-HOUSE PRODUCTION',
     category: 'SAMPLE TO BULK',
     image: '/media/stiching.webp',
+    mobileImage: '/media/mobile/stitching-m.jpg',
+    imageSizes: 'max(100vw, 178vh)',
     alt: 'Close-up of hands stitching black sportswear fabric on an industrial sewing machine',
   },
   {
@@ -57,6 +62,8 @@ const slides: Slide[] = [
     client: 'PACKING',
     category: 'GLOBAL DELIVERY — 2026',
     image: '/media/zateef-delivery.webp',
+    mobileImage: '/media/mobile/delivery-m.jpg',
+    imageSizes: 'max(100vw, 178vh)',
     alt: 'Black Zateef International shipping boxes, an open box with a packed black hoodie, a checklist and a thank-you card on a wooden table',
     imagePosition: '58% 0%',
     strongBottomShade: true,
@@ -71,6 +78,7 @@ const INTRO_DURATION = SLIDE_DURATION;
 const TOTAL_STRIPS = 10;
 const LITE_STRIPS = 6;
 const IMAGE_PRELOAD_ATTEMPTS = 3;
+const MOBILE_PORTRAIT_QUERY = '(max-width: 767px) and (orientation: portrait)';
 
 const introProgressStyle = { '--progress-duration': `${INTRO_DURATION}ms` } as CSSProperties;
 const slideProgressStyle = { '--progress-duration': `${SLIDE_DURATION}ms` } as CSSProperties;
@@ -88,16 +96,42 @@ function formatAnimationDelay(index: number, count: 6 | 10) {
   return `${((STRIP_SPAN - STRIP_DURATION) / (count - 1)) * index}ms`;
 }
 
-async function loadImage(src: string, attempt = 1): Promise<void> {
+function getDesktopImageProps(slide: Slide) {
+  if (!slide.image) return null;
+
+  return getImageProps({
+    src: slide.image,
+    alt: slide.alt ?? '',
+    fill: true,
+    sizes: slide.imageSizes ?? '100vw',
+    quality: 90,
+  }).props;
+}
+
+async function loadImage(slide: Slide, attempt = 1): Promise<void> {
+  const isMobilePortrait = window.matchMedia(MOBILE_PORTRAIT_QUERY).matches;
+  const imageProps = getDesktopImageProps(slide);
+  const src = isMobilePortrait && slide.mobileImage
+    ? slide.mobileImage
+    : imageProps?.src;
+  if (!src || !imageProps) return;
+
   try {
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    await new Promise<HTMLImageElement>((resolve, reject) => {
       const preloadedImage = new window.Image();
       preloadedImage.decoding = 'async';
-      preloadedImage.onload = () => resolve(preloadedImage);
+      preloadedImage.onload = () => {
+        void preloadedImage.decode().then(() => resolve(preloadedImage), reject);
+      };
       preloadedImage.onerror = () => reject(new Error(`Could not load hero image: ${src}`));
-      preloadedImage.src = src;
+      if (isMobilePortrait) {
+        preloadedImage.src = src;
+      } else {
+        preloadedImage.sizes = imageProps.sizes ?? '100vw';
+        if (imageProps.srcSet) preloadedImage.srcset = imageProps.srcSet;
+        preloadedImage.src = src;
+      }
     });
-
   } catch (error) {
     if (attempt >= IMAGE_PRELOAD_ATTEMPTS) {
       throw new Error(`Could not preload hero image after ${attempt} attempts: ${src}`, { cause: error });
@@ -106,21 +140,25 @@ async function loadImage(src: string, attempt = 1): Promise<void> {
     await new Promise<void>((resolve) => {
       window.setTimeout(resolve, attempt * 300);
     });
-    return loadImage(src, attempt + 1);
+    return loadImage(slide, attempt + 1);
   }
 }
 
 function preloadImage(slide: Slide) {
-  const src = slide.image;
-  if (!src) return Promise.resolve();
+  if (!slide.image) return Promise.resolve();
 
-  const cached = preloadedImages.get(src);
+  const cacheKey = [
+    slide.image,
+    window.matchMedia(MOBILE_PORTRAIT_QUERY).matches ? 'mobile' : 'desktop',
+    `${window.innerWidth}x${window.innerHeight}@${window.devicePixelRatio}`,
+  ].join('|');
+  const cached = preloadedImages.get(cacheKey);
   if (cached) return cached;
 
-  const request = loadImage(src);
+  const request = loadImage(slide);
 
-  preloadedImages.set(src, request);
-  request.catch(() => preloadedImages.delete(src));
+  preloadedImages.set(cacheKey, request);
+  request.catch(() => preloadedImages.delete(cacheKey));
   return request;
 }
 
@@ -132,19 +170,31 @@ const SlideMedia = memo(function SlideMedia({
   priority?: boolean;
 }) {
   if (slide.image) {
+    const imageProps = getDesktopImageProps(slide);
+    if (!imageProps) return null;
+
     return (
       <div className="home-hero__slide-media">
-        <Image
-          className="home-hero__image"
-          src={slide.image}
-          alt={slide.alt ?? ''}
-          fill
-          sizes="100vw"
-          style={slide.imagePosition ? { objectPosition: slide.imagePosition } : undefined}
-          unoptimized={slide.unoptimized}
-          loading={priority ? 'eager' : 'lazy'}
-          priority={priority}
-        />
+        <picture className="home-hero__picture">
+          {slide.mobileImage && (
+            <source
+              media={MOBILE_PORTRAIT_QUERY}
+              srcSet={slide.mobileImage}
+              sizes="100vw"
+            />
+          )}
+          <img
+            {...imageProps}
+            className="home-hero__image"
+            alt={slide.alt ?? ''}
+            loading={priority ? 'eager' : 'lazy'}
+            decoding="async"
+            style={{
+              ...imageProps.style,
+              '--hero-image-position': slide.imagePosition ?? 'center',
+            } as CSSProperties}
+          />
+        </picture>
         <div className={['home-hero__media-shade', slide.strongBottomShade ? 'home-hero__media-shade--strong-bottom' : ''].join(' ')} />
       </div>
     );
@@ -252,7 +302,9 @@ export function HomeHeroSlider() {
       console.error('Could not preload the next hero image.', error);
     });
   }, [clearTimer, updateTransitionState]);
-  moveToRef.current = moveTo;
+  useEffect(() => {
+    moveToRef.current = moveTo;
+  }, [moveTo]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -281,8 +333,16 @@ export function HomeHeroSlider() {
       console.error('Could not preload the first hero image.', error);
     });
 
+    const idlePreloadTimer = window.setTimeout(() => {
+      if (cancelled) return;
+      void Promise.all(slides.slice(2).map((slide) => preloadImage(slide))).catch((error: unknown) => {
+        console.error('Could not preload all hero slides.', error);
+      });
+    }, 250);
+
     return () => {
       cancelled = true;
+      window.clearTimeout(idlePreloadTimer);
       clearTimer();
       updateTransitionState(false);
     };
