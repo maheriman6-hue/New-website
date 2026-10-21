@@ -55,20 +55,11 @@ select {
   font-family: var(--font-display), sans-serif;
 }
 
-.font-serif {
-  font-family: var(--font-serif), serif;
-}
-
 .font-mono {
   font-family: var(--font-mono), monospace;
 }
 
-.font-sans {
-  font-family: var(--font-sans), sans-serif;
-}
-
-.brand-pill,
-.availability-pill {
+.brand-pill {
   display: inline-flex;
   align-items: center;
   height: 40px;
@@ -82,13 +73,6 @@ select {
   background: rgba(242, 238, 230, 0.98);
   justify-content: center;
   padding: 0 0.65rem;
-  color: #0a0a0a;
-}
-
-.availability-pill {
-  gap: 0.7rem;
-  background: rgba(242, 238, 230, 0.98);
-  padding: 0 1rem;
   color: #0a0a0a;
 }
 
@@ -255,7 +239,6 @@ select {
   isolation: isolate;
 }
 
-.home-hero__scene,
 .home-hero__scene {
   z-index: 0;
   background: #0a0a0a;
@@ -744,16 +727,6 @@ select {
   font-weight: 400;
   line-height: 0.72;
   letter-spacing: -0.075em;
-}
-
-.selected-work__heading span {
-  padding-top: 0.03em;
-  color: var(--red);
-  font-family: var(--font-serif), serif;
-  font-size: 0.27em;
-  font-style: italic;
-  font-weight: 500;
-  letter-spacing: -0.04em;
 }
 
 .selected-work__all-link {
@@ -1656,16 +1629,6 @@ select {
   letter-spacing: -0.075em;
 }
 
-.work-index__title span {
-  padding-top: 0.03em;
-  color: var(--red);
-  font-family: var(--font-serif), serif;
-  font-size: 0.27em;
-  font-style: italic;
-  font-weight: 500;
-  letter-spacing: -0.04em;
-}
-
 .work-index__filters {
   display: flex;
   flex-wrap: wrap;
@@ -1834,6 +1797,10 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .route-transition.is-visible {
+    visibility: hidden;
+  }
+
   .quote-modal,
   .quote-modal::backdrop,
   .quote-modal--closing,
@@ -1912,20 +1879,6 @@ select {
     grid-column: 1;
     grid-row: 1;
     justify-self: start;
-  }
-
-  .site-header .availability-pill {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
-    gap: 0.45rem;
-    padding-right: 0.7rem;
-    padding-left: 0.7rem;
-  }
-
-  .site-header .availability-pill .font-mono {
-    font-size: 8px;
-    letter-spacing: 0.08em;
   }
 
   .site-header .app-nav-pill {
@@ -2283,7 +2236,6 @@ select {
 .portrait-reveal__shutter:nth-child(9) { margin-top: 56%; }
 .portrait-reveal__shutter:nth-child(10) { margin-top: 63%; }
 
-.portrait-reveal__caption,
 .about-story__eyebrow,
 .about-section__eyebrow {
   color: rgba(242, 238, 230, 0.55);
@@ -2291,10 +2243,6 @@ select {
   font-size: 10px;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-}
-
-.portrait-reveal__caption {
-  margin: 1.25rem 0 0;
 }
 
 .about-story {
@@ -2980,7 +2928,6 @@ html[data-contact-animation="pending"] .contact-page__email-underline {
     object-position: 50% 38%;
   }
 
-  .portrait-reveal__caption,
   .about-story__eyebrow,
   .about-section__eyebrow {
     font-size: 8px;

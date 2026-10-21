@@ -20,7 +20,7 @@ export function ReelBlock() {
         <div className="reel-block__shade" />
         <div className="reel-block__title-group">
           <h2 id="reel-heading" className="reel-block__title">REEL</h2>
-          <span className="reel-block__year">'26</span>
+          <span className="reel-block__year">&apos;26</span>
         </div>
         <button
           className="reel-block__play"

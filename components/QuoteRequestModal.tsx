@@ -23,7 +23,6 @@ const requiredFields = [
 async function submitQuoteForm(formData: FormData) {
   if (!FORM_ENDPOINT) {
     await new Promise((resolve) => window.setTimeout(resolve, 1200));
-    console.info('Quote request (demo mode):', Object.fromEntries(formData.entries()));
     return;
   }
 

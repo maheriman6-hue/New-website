@@ -12,7 +12,6 @@ export function RouteTransition() {
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setIsVisible(false);
       isTransitioning.current = false;
     } else {
       timers.current.push(window.setTimeout(() => {

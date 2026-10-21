@@ -216,7 +216,7 @@ export function AboutExperience() {
       window.removeEventListener('orientationchange', onResize);
       story.classList.remove('is-animation-pending');
     };
-  }, []);
+  }, [quoteLines]);
 
   useLayoutEffect(() => {
     const story = storyRef.current;

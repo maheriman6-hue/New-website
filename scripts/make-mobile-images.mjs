@@ -48,8 +48,4 @@ for (const { input, output, posX } of images) {
     .sharpen({ sigma: 1.2, m1: 0.4, m2: 1.2 })
     .jpeg({ quality: 90, mozjpeg: true, progressive: true })
     .toFile(outputPath);
-
-  console.log(
-    `${input} ${width}x${height} crop=${left},0 ${cropWidth}x${height} posX=${posX} -> ${output}`,
-  );
 }
