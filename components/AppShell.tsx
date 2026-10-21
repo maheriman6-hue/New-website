@@ -4,6 +4,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import {
+  CONTACT_EMAIL,
+  CONTACT_MAILTO_LINK,
+  CONTACT_WHATSAPP_LINK,
+  WHATSAPP_DISPLAY_NUMBER,
+} from '@/lib/contactLinks';
 
 const navItems = [
   { label: 'Work', href: '/work' },
@@ -119,8 +125,8 @@ export function AppShell({
 
           <div className="col-start-2 row-start-1 flex min-w-0 flex-col gap-2.5 text-[15px] leading-relaxed text-[#f5f1ea] sm:col-start-auto sm:row-start-auto sm:text-[17px]">
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#f5f1ea]/75">Contact</div>
-            <a className="break-words" href="mailto:zateefinternational@gmail.com">zateefinternational@gmail.com</a>
-            <div><a href="https://api.whatsapp.com/send/?phone=923289615985&text=Hi%2C+I+want+to+request+a+quote+for+clothing+manufacturing.&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">+92 328 9615 985</a></div>
+            <a className="break-words" href={CONTACT_MAILTO_LINK}>{CONTACT_EMAIL}</a>
+            <div><a href={CONTACT_WHATSAPP_LINK} target="_blank" rel="noopener noreferrer">{WHATSAPP_DISPLAY_NUMBER}</a></div>
           </div>
         </div>
 

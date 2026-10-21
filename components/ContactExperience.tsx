@@ -6,6 +6,13 @@ import gsap from 'gsap';
 import { AppShell } from '@/components/AppShell';
 import { QuoteRequestModal } from '@/components/QuoteRequestModal';
 import {
+  CONTACT_EMAIL,
+  CONTACT_MAILTO_LINK,
+  CONTACT_PHONE_LINK,
+  CONTACT_WHATSAPP_LINK,
+  WHATSAPP_DISPLAY_NUMBER,
+} from '@/lib/contactLinks';
+import {
   createEntranceTimeline,
   ENTRANCE_EASE,
   registerEntranceEase,
@@ -35,8 +42,6 @@ const CONTACT_TIMING = {
   actionStagger: 0.06,
   actionOffset: 12,
 };
-
-const CONTACT_EMAIL = 'zateefinternational@gmail.com';
 
 function measureWrappedLines(element: HTMLElement | null): string[] | null {
   const textNode = element?.firstChild;
@@ -542,7 +547,7 @@ export function ContactExperience() {
             <a
               ref={emailLinkRef}
               className="contact-page__email"
-              href={`mailto:${CONTACT_EMAIL}`}
+              href={CONTACT_MAILTO_LINK}
               aria-label={CONTACT_EMAIL}
             >
               <span className="contact-page__email-lines" aria-label={CONTACT_EMAIL}>
@@ -566,21 +571,21 @@ export function ContactExperience() {
               <span className="contact-page__divider" aria-hidden="true" />
               <h2 id="contact-representation">WHATSAPP</h2>
               <p>Chat with our team for a quick quote</p>
-              <a href="https://api.whatsapp.com/send/?phone=923289615985&text=Hi%2C+I+want+to+request+a+quote+for+clothing+manufacturing.&type=phone_number&app_absent=0" target="_blank" rel="noreferrer">
-                +92 328 9615 985
+              <a href={CONTACT_WHATSAPP_LINK} target="_blank" rel="noopener noreferrer">
+                {WHATSAPP_DISPLAY_NUMBER}
               </a>
             </section>
             <section className="contact-page__detail" aria-labelledby="contact-studio">
               <span className="contact-page__divider" aria-hidden="true" />
               <h2 id="contact-studio">WHAT YOU GET</h2>
               <p>Samples before bulk orders</p>
-              <a href="tel:+351912000000">	Tracked shipments to your door</a>
+              <a href={CONTACT_PHONE_LINK}>	Tracked shipments to your door</a>
             </section>
             <section className="contact-page__detail contact-page__detail--social" aria-labelledby="contact-social">
               <span className="contact-page__divider" aria-hidden="true" />
               <h2 id="contact-social">Social</h2>
-              <a href="https://www.instagram.com/zateef_international?mdxt=MW12c3M0NDIKNmVjMg==" target="_blank" rel="noreferrer">Instagram ↗</a>
-              <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer">LinkedIn ↗</a>
+              <a href="https://www.instagram.com/zateef_international?mdxt=MW12c3M0NDIKNmVjMg==" target="_blank" rel="noopener noreferrer">Instagram ↗</a>
+              <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
             </section>
           </div>
 

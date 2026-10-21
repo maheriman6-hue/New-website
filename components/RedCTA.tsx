@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { QuoteRequestModal } from '@/components/QuoteRequestModal';
+import { CONTACT_EMAIL, CONTACT_MAILTO_LINK } from '@/lib/contactLinks';
 
 const steps = Array.from({ length: 10 }, (_, index) => index);
 
@@ -73,8 +74,8 @@ export function RedCTA() {
           >
             Request a quote <span aria-hidden="true">↗</span>
           </button>
-          <a className="red-cta__email" href="mailto:zateefinternational@gmail.com">
-            zateefinternational@gmail.com
+          <a className="red-cta__email" href={CONTACT_MAILTO_LINK}>
+            {CONTACT_EMAIL}
           </a>
           <span className="red-cta__reply">REPLY WITHIN 24H</span>
         </div>

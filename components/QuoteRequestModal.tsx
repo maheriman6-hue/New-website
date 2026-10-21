@@ -1,13 +1,29 @@
 'use client';
 
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import {
+  CONTACT_EMAIL,
+  CONTACT_MAILTO_LINK,
+  QUOTE_WHATSAPP_LINK,
+} from '@/lib/contactLinks';
 
-const WHATSAPP_NUMBER = '923289615985'; // country code, no plus sign, no spaces, e.g. 923001234567
 const FORM_ENDPOINT = ''; // leave empty for now. Later paste my Formspree / Web3Forms / EmailJS URL here
-const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=Hi%2C%20I%20want%20to%20request%20a%20quote%20for%20clothing%20manufacturing.`;
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 type FormErrors = Record<string, string>;
 type SubmitState = 'idle' | 'sending' | 'success' | 'error';
+
+const fieldLengthLimits = {
+  fullName: 120,
+  brandName: 120,
+  email: 254,
+  whatsapp: 32,
+  product: 40,
+  category: 32,
+  quantity: 32,
+  designLink: 2048,
+  notes: 2000,
+} as const;
 
 const requiredFields = [
   ['fullName', 'Full name'],
@@ -26,7 +42,12 @@ async function submitQuoteForm(formData: FormData) {
     return;
   }
 
-  const response = await fetch(FORM_ENDPOINT, {
+  const endpoint = new URL(FORM_ENDPOINT);
+  if (endpoint.protocol !== 'https:') {
+    throw new Error('The quote form endpoint must use HTTPS.');
+  }
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     body: formData,
     headers: { Accept: 'application/json' },
@@ -46,8 +67,15 @@ function validateForm(formData: FormData) {
     }
   }
 
+  for (const [name, limit] of Object.entries(fieldLengthLimits)) {
+    const value = formData.get(name);
+    if (typeof value === 'string' && value.length > limit) {
+      errors[name] = `Use ${limit} characters or fewer.`;
+    }
+  }
+
   const email = String(formData.get('email') ?? '').trim();
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (email && (email.length > fieldLengthLimits.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
     errors.email = 'Enter a valid email address.';
   }
 
@@ -56,6 +84,8 @@ function validateForm(formData: FormData) {
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
       errors.designFile = 'Upload a PDF, JPG, or PNG file.';
+    } else if (file.size > MAX_UPLOAD_BYTES) {
+      errors.designFile = 'Files must be 5 MB or smaller.';
     }
   }
 
@@ -110,6 +140,8 @@ export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
 
     const form = event.currentTarget;
     const formData = new FormData(form);
+    if (String(formData.get('website') ?? '').trim()) return;
+
     const nextErrors = validateForm(formData);
     setErrors(nextErrors);
 
@@ -159,7 +191,7 @@ export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
             <p className="quote-modal__eyebrow">(06) — REQUEST RECEIVED</p>
             <h2 id="quote-modal-title">Got it.</h2>
             <p>We&apos;ll reply within 24 hours.</p>
-            <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer">
+            <a href={QUOTE_WHATSAPP_LINK} target="_blank" rel="noopener noreferrer">
               Need it faster? Message us on WhatsApp.
             </a>
           </section>
@@ -177,6 +209,7 @@ export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
                     id="quote-full-name"
                     name="fullName"
                     autoComplete="name"
+                    maxLength={fieldLengthLimits.fullName}
                     required
                     aria-invalid={Boolean(errors.fullName)}
                     aria-describedby={errors.fullName ? 'quote-full-name-error' : undefined}
@@ -190,6 +223,7 @@ export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
                     id="quote-brand-name"
                     name="brandName"
                     autoComplete="organization"
+                    maxLength={fieldLengthLimits.brandName}
                     required
                     aria-invalid={Boolean(errors.brandName)}
                     aria-describedby={errors.brandName ? 'quote-brand-name-error' : undefined}
@@ -205,6 +239,7 @@ export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
                     type="email"
                     inputMode="email"
                     autoComplete="email"
+                    maxLength={fieldLengthLimits.email}
                     required
                     aria-invalid={Boolean(errors.email)}
                     aria-describedby={errors.email ? 'quote-email-error' : undefined}
@@ -220,6 +255,7 @@ export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
+                    maxLength={fieldLengthLimits.whatsapp}
                     placeholder="+92 300 1234567"
                     required
                     aria-invalid={Boolean(errors.whatsapp)}
@@ -317,13 +353,19 @@ export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
                     name="designLink"
                     type="url"
                     inputMode="url"
+                    maxLength={fieldLengthLimits.designLink}
                     placeholder="https://drive.google.com/..."
                   />
                 </div>
 
                 <div className="quote-form__field quote-form__field--wide">
                   <label htmlFor="quote-notes">Extra notes <span className="quote-form__optional">(optional)</span></label>
-                  <textarea id="quote-notes" name="notes" rows={3} />
+                  <textarea
+                    id="quote-notes"
+                    name="notes"
+                    rows={3}
+                    maxLength={fieldLengthLimits.notes}
+                  />
                 </div>
               </div>
 
@@ -335,9 +377,9 @@ export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
               {submitState === 'error' && (
                 <p className="quote-form__submit-error" role="alert">
                   Something went wrong. Please email us at{' '}
-                  <a href="mailto:zateefinternational@gmail.com">zateefinternational@gmail.com</a>
+                  <a href={CONTACT_MAILTO_LINK}>{CONTACT_EMAIL}</a>
                   {' '}or message us on{' '}
-                  <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer">WhatsApp</a>.
+                  <a href={QUOTE_WHATSAPP_LINK} target="_blank" rel="noopener noreferrer">WhatsApp</a>.
                 </p>
               )}
 
@@ -352,7 +394,7 @@ export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
                 </button>
                 <a
                   className="quote-form__whatsapp"
-                  href={WHATSAPP_LINK}
+                  href={QUOTE_WHATSAPP_LINK}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
