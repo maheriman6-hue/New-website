@@ -38,7 +38,7 @@ export function WorkIndex() {
     <AppShell heroTone="dark">
       <div className="work-index">
         <header className="work-index__intro">
-          <p className="work-index__eyebrow">(INDEX) — SELECTED WORK 2019–26</p>
+          <p className="work-index__eyebrow">(WORK) — 2023–26</p>
           <h1 className="work-index__title">
             WORK
           </h1>

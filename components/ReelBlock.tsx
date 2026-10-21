@@ -20,7 +20,7 @@ export function ReelBlock() {
         <div className="reel-block__shade" />
         <div className="reel-block__title-group">
           <h2 id="reel-heading" className="reel-block__title">REEL</h2>
-          <span className="reel-block__year">&apos;26</span>
+          
         </div>
         <button
           className="reel-block__play"
@@ -30,7 +30,7 @@ export function ReelBlock() {
         >
           Play <span aria-hidden="true">▶</span>
         </button>
-        <div className="reel-block__timecode">01:24 — SOUND ON</div>
+
         {showVideoNotice && (
           <div className="reel-block__notice" role="status">
             Add the reel video at <code>public/media/reel.mp4</code> to enable playback.
