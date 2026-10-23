@@ -92,7 +92,15 @@ function validateForm(formData: FormData) {
   return errors;
 }
 
-export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
+export function QuoteRequestModal({
+  onClose,
+  initialProduct,
+  initialCategory,
+}: {
+  onClose: () => void;
+  initialProduct?: string;
+  initialCategory?: string;
+}) {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const closeTimeoutRef = useRef<number | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -271,12 +279,14 @@ export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
                   <select
                     id="quote-product"
                     name="product"
-                    defaultValue=""
+                    defaultValue={initialProduct ?? ''}
                     required
                     aria-invalid={Boolean(errors.product)}
                     aria-describedby={errors.product ? 'quote-product-error' : undefined}
                   >
                     <option value="" disabled>Select a product</option>
+                    {initialProduct && !['T-shirts', 'Hoodies', 'Jerseys', 'Tracksuits', 'Shorts', 'Jackets', 'Other'].includes(initialProduct)
+                      && <option value={initialProduct}>{initialProduct}</option>}
                     <option>T-shirts</option>
                     <option>Hoodies</option>
                     <option>Jerseys</option>
@@ -293,12 +303,14 @@ export function QuoteRequestModal({ onClose }: { onClose: () => void }) {
                   <select
                     id="quote-category"
                     name="category"
-                    defaultValue=""
+                    defaultValue={initialCategory ?? ''}
                     required
                     aria-invalid={Boolean(errors.category)}
                     aria-describedby={errors.category ? 'quote-category-error' : undefined}
                   >
                     <option value="" disabled>Select a category</option>
+                    {initialCategory && !['Streetwear', 'Sportswear', 'Both'].includes(initialCategory)
+                      && <option value={initialCategory}>{initialCategory}</option>}
                     <option>Streetwear</option>
                     <option>Sportswear</option>
                     <option>Both</option>
