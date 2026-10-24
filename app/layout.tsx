@@ -35,8 +35,11 @@ const sans = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Varga',
-  description: 'Creative portfolio foundation',
+  title: 'ZATEEF INTERNATIONAL',
+  description: 'Sportswear and streetwear made to your design: from first sample to bulk production and delivery.',
+  icons: {
+    icon: '/images/icon.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
