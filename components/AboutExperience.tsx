@@ -74,7 +74,7 @@ function areLinesEqual(left: string[][], right: string[][]) {
 }
 
 const statistics = [
-  { value: 12, label: 'YEARS IN MANUFACTURING' },
+  { value: 3, label: 'YEARS IN MANUFACTURING' },
   { value: 211, label: 'ORDERS DELIVERED' },
   { value: 18, label: 'COUNTRIES SHIPPED TO' },
   { value: 9, label: 'TEAM MEMBERS (or PIECES PRODUCED, or REPEAT CLIENTS)' },
