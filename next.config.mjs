@@ -55,7 +55,7 @@ const nextConfig = {
           "base-uri 'self'",
           "object-src 'none'",
           "frame-ancestors 'none'",
-          'upgrade-insecure-requests',
+          ...(process.env.NODE_ENV === 'production' ? ['upgrade-insecure-requests'] : []),
         ].join('; '),
       },
       ...(process.env.NODE_ENV === 'production'
