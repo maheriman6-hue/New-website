@@ -4,6 +4,7 @@ import { Bebas_Neue, Cormorant_Garamond, IBM_Plex_Mono, Inter } from 'next/font/
 import Script from 'next/script';
 import { RouteTransition } from '@/components/RouteTransition';
 import { PerformanceRuntime } from '@/components/PerformanceRuntime';
+import { WhatsAppChat } from '@/components/WhatsAppChat';
 
 const display = Bebas_Neue({
   variable: '--font-display',
@@ -59,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PerformanceRuntime />
         <RouteTransition />
         {children}
+        <WhatsAppChat />
       </body>
     </html>
   );
