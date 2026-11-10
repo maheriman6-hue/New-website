@@ -77,7 +77,7 @@ const statistics = [
   { value: 3, label: 'YEARS IN MANUFACTURING' },
   { value: 211, label: 'ORDERS DELIVERED' },
   { value: 18, label: 'COUNTRIES SHIPPED TO' },
-  { value: 9, label: 'TEAM MEMBERS (or PIECES PRODUCED, or REPEAT CLIENTS)' },
+  { value: 9, label: 'REPEAT CLIENTS' },
 ];
 
 const services = [

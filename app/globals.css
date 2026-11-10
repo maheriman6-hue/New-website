@@ -233,21 +233,18 @@ select {
 }
 
 .whatsapp-chat__panel {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 12px);
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
   display: flex;
-  width: 340px;
-  max-height: 70vh;
+  width: min(360px, calc(100vw - 24px));
   flex-direction: column;
-  gap: 14px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  gap: clamp(8px, 2vh, 14px);
+  overflow: hidden;
   border: 1px solid rgba(242, 238, 230, 0.14);
   border-radius: 24px;
-  padding: 20px;
+  padding: clamp(14px, 2.4vh, 20px);
   background: #10100f;
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.38);
   color: #f2eee6;
@@ -259,10 +256,6 @@ select {
     opacity 250ms ease,
     transform 250ms ease,
     visibility 0s linear 250ms;
-}
-
-.whatsapp-chat__panel::-webkit-scrollbar {
-  display: none;
 }
 
 .whatsapp-chat__panel.is-open {
@@ -352,13 +345,13 @@ select {
 }
 
 .whatsapp-chat__message-label {
-  margin-bottom: -8px;
+  flex: none;
 }
 
 .whatsapp-chat__message {
   width: 100%;
   min-height: 82px;
-  resize: vertical;
+  resize: none;
   border: 1px solid rgba(242, 238, 230, 0.18);
   border-radius: 12px;
   padding: 11px 12px;
@@ -460,13 +453,62 @@ select {
   }
 
   .whatsapp-chat__panel {
-    position: fixed;
-    right: 12px;
-    bottom: calc(20px + env(safe-area-inset-bottom) + 52px + 12px);
-    left: 12px;
+    right: max(12px, env(safe-area-inset-right));
+    left: max(12px, env(safe-area-inset-left));
     width: auto;
-    max-height: 75dvh;
-    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-height: 600px) {
+  .whatsapp-chat__panel {
+    gap: 8px;
+    padding: 14px;
+  }
+
+  .whatsapp-chat__greeting {
+    padding: 10px 12px;
+    line-height: 1.35;
+  }
+
+  .whatsapp-chat__reply {
+    min-height: 40px;
+  }
+
+  .whatsapp-chat__message {
+    min-height: 64px;
+  }
+
+  .whatsapp-chat__continue {
+    min-height: 44px;
+  }
+}
+
+@media (max-height: 480px) {
+  .whatsapp-chat__panel {
+    gap: 6px;
+    padding: 12px;
+  }
+
+  .whatsapp-chat__greeting {
+    padding: 8px 10px;
+  }
+
+  .whatsapp-chat__reply {
+    min-height: 36px;
+  }
+
+  .whatsapp-chat__message {
+    min-height: 56px;
+    padding: 9px 10px;
+  }
+
+  .whatsapp-chat__continue {
+    min-height: 40px;
+  }
+
+  .whatsapp-chat__note {
+    font-size: 10px;
+    line-height: 1.3;
   }
 }
 
