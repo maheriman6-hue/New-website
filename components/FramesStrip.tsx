@@ -34,6 +34,17 @@ const frames = [
 
 export function FramesStrip() {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+
+  function scrollFrames(direction: -1 | 1) {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    viewport.scrollBy({
+      left: direction * viewport.clientWidth * 0.8,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
+  }
 
   useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -75,28 +86,38 @@ export function FramesStrip() {
           In-betweens <span>&amp; outtakes</span>
         </h2>
       </div>
-      <div className="frames-strip__viewport">
-        <div className="frames-strip__track">
-          {frames.map((frame, index) => (
-            <figure
-              className={`frames-strip__frame frames-strip__frame--${frame.shape}`}
-              key={frame.src}
-              style={{ '--frame-tilt': frame.tilt } as React.CSSProperties}
-            >
-              <div className="frames-strip__drift">
-                <Image
-                  className="frames-strip__image"
-                  src={frame.src}
-                  alt={frame.alt}
-                  fill
-                  sizes={frame.shape === 'wide' ? '(max-width: 700px) 74vw, 42vw' : '(max-width: 700px) 50vw, 22vw'}
-                  loading="lazy"
-                  priority={false}
-                />
-              </div>
-              <figcaption className="frames-strip__index">FRAME / {String(index + 1).padStart(2, '0')}</figcaption>
-            </figure>
-          ))}
+      <div className="frames-strip__gallery">
+        <nav className="frames-strip__controls" aria-label="Browse frames">
+          <button type="button" aria-label="Show previous frames" aria-controls="frames-strip-gallery" onClick={() => scrollFrames(-1)}>
+            <span aria-hidden="true">←</span>
+          </button>
+          <button type="button" aria-label="Show next frames" aria-controls="frames-strip-gallery" onClick={() => scrollFrames(1)}>
+            <span aria-hidden="true">→</span>
+          </button>
+        </nav>
+        <div className="frames-strip__viewport" id="frames-strip-gallery" ref={viewportRef}>
+          <div className="frames-strip__track">
+            {frames.map((frame, index) => (
+              <figure
+                className={`frames-strip__frame frames-strip__frame--${frame.shape}`}
+                key={frame.src}
+                style={{ '--frame-tilt': frame.tilt } as React.CSSProperties}
+              >
+                <div className="frames-strip__drift">
+                  <Image
+                    className="frames-strip__image"
+                    src={frame.src}
+                    alt={frame.alt}
+                    fill
+                    sizes={frame.shape === 'wide' ? '(max-width: 700px) 74vw, 42vw' : '(max-width: 700px) 50vw, 22vw'}
+                    loading="lazy"
+                    priority={false}
+                  />
+                </div>
+                <figcaption className="frames-strip__index">FRAME / {String(index + 1).padStart(2, '0')}</figcaption>
+              </figure>
+            ))}
+          </div>
         </div>
       </div>
     </section>

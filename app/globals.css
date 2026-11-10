@@ -1397,6 +1397,10 @@ select {
   color: rgba(242, 238, 230, 0.52);
 }
 
+.frames-strip__controls {
+  display: none;
+}
+
 .frames-strip__viewport {
   overflow: hidden;
   margin-top: clamp(2rem, 5vw, 5rem);
@@ -3044,8 +3048,62 @@ select {
     flex-direction: column;
   }
 
-  .frames-strip__viewport {
+  .frames-strip__controls {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    right: 0.6rem;
+    left: 0.6rem;
+    display: flex;
+    justify-content: space-between;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .frames-strip__gallery {
+    position: relative;
     margin-top: 2rem;
+  }
+
+  .frames-strip__controls button {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 1px solid rgba(242, 238, 230, 0.55);
+    border-radius: 50%;
+    background: rgba(10, 10, 10, 0.78);
+    color: var(--paper);
+    cursor: pointer;
+    font-size: 1.15rem;
+    transition: border-color 180ms ease, background-color 180ms ease;
+    pointer-events: auto;
+  }
+
+  .frames-strip__controls button:hover {
+    border-color: var(--paper);
+    background: rgba(242, 238, 230, 0.1);
+  }
+
+  .frames-strip__controls button:focus-visible {
+    outline: 2px solid var(--paper);
+    outline-offset: 3px;
+  }
+
+  .frames-strip__viewport {
+    margin-top: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: 1.4rem;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+
+  .frames-strip__viewport::-webkit-scrollbar {
+    display: none;
   }
 
   .frames-strip__track {
@@ -3059,6 +3117,10 @@ select {
 
   .frames-strip__frame--portrait {
     width: 48vw;
+  }
+
+  .frames-strip__frame {
+    scroll-snap-align: start;
   }
 
   .clients-marquee {
@@ -4059,7 +4121,7 @@ html[data-contact-animation="pending"] .contact-page__email-underline {
   }
 
   .contact-page__content {
-    padding: 2.75rem 1rem 4rem;
+    padding: 6.5rem 1rem 4rem;
   }
 
   .contact-page__eyebrow {
