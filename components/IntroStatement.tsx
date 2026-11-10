@@ -181,7 +181,7 @@ export function IntroStatement() {
         className="intro-statement__headline"
         aria-label="We build sportswear and streetwear for brands that refuse to stand still."
       >
-        {statementLines.map((line, lineIndex) => (
+         {statementLines.map((line, lineIndex) => (
           <span className="intro-statement__line" key={`line-${lineIndex}`}>
             {line.map((word, wordIndex) => (
               <span
