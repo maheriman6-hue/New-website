@@ -583,28 +583,27 @@ export function ContactExperience() {
             </section>
             <section className="contact-page__detail contact-page__detail--social" aria-labelledby="contact-social">
               <span className="contact-page__divider" aria-hidden="true" />
-              <h2 id="contact-social">Social</h2>
+              <h2 id="contact-social">Follow our work</h2>
               <a href="https://www.instagram.com/zateef_international?mdxt=MW12c3M0NDIKNmVjMg==" target="_blank" rel="noopener noreferrer">Instagram ↗</a>
-              <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+              <a href="#" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
             </section>
           </div>
-
-          <div className="contact-page__actions">
-            <span className="contact-page__action-wrap">
-              <button
-                className="contact-page__button contact-page__button--dark"
-                type="button"
-                onClick={() => setIsQuoteOpen(true)}
-              >
-                Request a quote <span aria-hidden="true">↗</span>
-              </button>
-            </span>
-            <span className="contact-page__action-wrap">
-              <Link className="contact-page__button contact-page__button--red" href="/work">
-                See what we make
-              </Link>
-            </span>
-          </div>
+        </div>
+        <div className="contact-page__actions">
+          <span className="contact-page__action-wrap">
+            <button
+              className="contact-page__button contact-page__button--dark"
+              type="button"
+              onClick={() => setIsQuoteOpen(true)}
+            >
+              Request a quote <span aria-hidden="true">↗</span>
+            </button>
+          </span>
+          <span className="contact-page__action-wrap">
+            <Link className="contact-page__button contact-page__button--red" href="/work">
+              See our work
+            </Link>
+          </span>
         </div>
       </section>
       {isQuoteOpen && <QuoteRequestModal onClose={() => setIsQuoteOpen(false)} />}

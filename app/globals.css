@@ -512,6 +512,12 @@ select {
   }
 }
 
+@media (max-width: 700px) {
+  .whatsapp-chat__panel {
+    padding-top: clamp(3.5rem, 10vh, 4.5rem);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .whatsapp-chat__trigger,
   .whatsapp-chat.is-ready .whatsapp-chat__trigger,
@@ -1398,12 +1404,49 @@ select {
 }
 
 .frames-strip__controls {
-  display: none;
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: clamp(0.75rem, 2vw, 2rem);
+  left: clamp(0.75rem, 2vw, 2rem);
+  display: flex;
+  justify-content: space-between;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.frames-strip__controls button {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border: 1px solid rgba(242, 238, 230, 0.55);
+  border-radius: 50%;
+  background: rgba(10, 10, 10, 0.78);
+  color: var(--paper);
+  cursor: pointer;
+  font-size: 1.15rem;
+  transition: border-color 180ms ease, background-color 180ms ease;
+  pointer-events: auto;
+}
+
+.frames-strip__controls button:hover {
+  border-color: var(--paper);
+  background: rgba(242, 238, 230, 0.1);
+}
+
+.frames-strip__controls button:focus-visible {
+  outline: 2px solid var(--paper);
+  outline-offset: 3px;
+}
+
+.frames-strip__gallery {
+  position: relative;
+  margin-top: clamp(2rem, 5vw, 5rem);
 }
 
 .frames-strip__viewport {
   overflow: hidden;
-  margin-top: clamp(2rem, 5vw, 5rem);
   padding: 2rem 0 3rem;
 }
 
@@ -3049,45 +3092,17 @@ select {
   }
 
   .frames-strip__controls {
-    position: absolute;
-    z-index: 2;
-    top: 50%;
     right: 0.6rem;
     left: 0.6rem;
-    display: flex;
-    justify-content: space-between;
-    transform: translateY(-50%);
-    pointer-events: none;
-  }
-
-  .frames-strip__gallery {
-    position: relative;
-    margin-top: 2rem;
   }
 
   .frames-strip__controls button {
-    display: grid;
     width: 2.75rem;
     height: 2.75rem;
-    place-items: center;
-    border: 1px solid rgba(242, 238, 230, 0.55);
-    border-radius: 50%;
-    background: rgba(10, 10, 10, 0.78);
-    color: var(--paper);
-    cursor: pointer;
-    font-size: 1.15rem;
-    transition: border-color 180ms ease, background-color 180ms ease;
-    pointer-events: auto;
   }
 
-  .frames-strip__controls button:hover {
-    border-color: var(--paper);
-    background: rgba(242, 238, 230, 0.1);
-  }
-
-  .frames-strip__controls button:focus-visible {
-    outline: 2px solid var(--paper);
-    outline-offset: 3px;
+  .frames-strip__gallery {
+    margin-top: 2rem;
   }
 
   .frames-strip__viewport {
@@ -3685,7 +3700,7 @@ select {
 
 .contact-page {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   background: var(--paper);
   color: var(--ink);
   -webkit-text-size-adjust: 100%;
@@ -3703,7 +3718,7 @@ select {
 .contact-page__content {
   position: relative;
   z-index: 2;
-  padding: clamp(3.5rem, 7vw, 7rem) clamp(1rem, 2.3vw, 2.5rem) clamp(5rem, 9vw, 9rem);
+  padding: clamp(3.5rem, 7vw, 7rem) clamp(1rem, 2.3vw, 2.5rem) 0;
 }
 
 .contact-page__eyebrow {
@@ -3923,10 +3938,15 @@ select {
 }
 
 .contact-page__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem;
-  margin-top: clamp(3rem, 6vw, 6rem);
+  margin-top: 0;
+  padding: 1rem clamp(1rem, 2.3vw, 2.5rem) calc(1rem + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(transparent, var(--paper) 40%);
 }
 
 .contact-page__action-wrap {
@@ -4121,7 +4141,7 @@ html[data-contact-animation="pending"] .contact-page__email-underline {
   }
 
   .contact-page__content {
-    padding: 6.5rem 1rem 4rem;
+    padding: 6.5rem 1rem 0;
   }
 
   .contact-page__eyebrow {
@@ -4154,13 +4174,23 @@ html[data-contact-animation="pending"] .contact-page__email-underline {
   }
 
   .contact-page__actions {
-    margin-top: 2.5rem;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    background: var(--paper);
+  }
+
+  .contact-page__action-wrap {
+    min-width: 0;
+    flex: 1 1 0;
   }
 
   .contact-page__button {
+    width: 100%;
     min-height: 3.2rem;
-    padding: 0 1.15rem;
-    font-size: 0.88rem;
+    padding: 0 0.5rem;
+    font-size: clamp(0.72rem, 3.2vw, 0.88rem);
+    white-space: nowrap;
   }
 }
 
