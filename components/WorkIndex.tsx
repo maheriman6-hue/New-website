@@ -1,7 +1,14 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo, useRef, useState, useLayoutEffect, type KeyboardEvent } from 'react';
+import {
+  useMemo,
+  useRef,
+  useState,
+  useLayoutEffect,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react';
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion';
 import gsap from 'gsap';
 import { AppShell } from '@/components/AppShell';
@@ -20,6 +27,12 @@ import { WORK_CATEGORIES, workItems, type WorkCategory, type WorkItem } from '@/
 
 type QuoteContext = WorkItem | null | undefined;
 
+const workDetailVariants = {
+  enter: (direction: -1 | 1) => ({ opacity: 0, x: direction * 32 }),
+  center: { opacity: 1, x: 0 },
+  exit: (direction: -1 | 1) => ({ opacity: 0, x: direction * -32 }),
+};
+
 function getWhatsAppLink(item?: WorkItem) {
   const message = item
     ? `Hi, I'm interested in: ${item.title}`
@@ -32,6 +45,7 @@ export function WorkIndex() {
   const [activeCategory, setActiveCategory] = useState<WorkCategory | 'All'>('All');
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
   const [quoteContext, setQuoteContext] = useState<QuoteContext>(undefined);
+  const [detailDirection, setDetailDirection] = useState<-1 | 1>(1);
   const detailOpen = selectedItem !== null;
   const reduceMotion = useReducedMotion();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +54,7 @@ export function WorkIndex() {
   const closingRef = useRef<HTMLElement | null>(null);
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const dialogCloseRef = useRef<HTMLButtonElement | null>(null);
+  const detailSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const cardRefs = useRef(new Map<string, HTMLButtonElement>());
   const openerSlugRef = useRef<string | null>(null);
   const restoreCardFocusRef = useRef(true);
@@ -145,7 +160,26 @@ export function WorkIndex() {
     if (!selectedItem) return;
     const currentIndex = visibleItems.findIndex((item) => item.slug === selectedItem.slug);
     const nextItem = visibleItems[currentIndex + direction];
-    if (nextItem) setSelectedItem(nextItem);
+    if (!nextItem) return;
+    setDetailDirection(direction);
+    setSelectedItem(nextItem);
+  }
+
+  function startDetailSwipe(event: PointerEvent<HTMLDialogElement>) {
+    if (event.pointerType !== 'touch' || !event.isPrimary) return;
+    detailSwipeStartRef.current = { x: event.clientX, y: event.clientY };
+  }
+
+  function endDetailSwipe(event: PointerEvent<HTMLDialogElement>) {
+    const start = detailSwipeStartRef.current;
+    detailSwipeStartRef.current = null;
+    if (event.pointerType !== 'touch' || !start) return;
+
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    navigateDetail(deltaX < 0 ? 1 : -1);
   }
 
   function handleDialogKeyDown(event: KeyboardEvent<HTMLDialogElement>) {
@@ -309,72 +343,89 @@ export function WorkIndex() {
             if (event.target === event.currentTarget) setSelectedItem(null);
           }}
           onKeyDown={handleDialogKeyDown}
+          onPointerDown={startDetailSwipe}
+          onPointerUp={endDetailSwipe}
+          onPointerCancel={() => { detailSwipeStartRef.current = null; }}
         >
-          <div className="work-detail__content">
-            <button
-              ref={dialogCloseRef}
-              type="button"
-              className="work-detail__close"
-              aria-label="Close work details"
-              onClick={() => setSelectedItem(null)}
+          <AnimatePresence mode="wait" initial={false} custom={detailDirection}>
+            <motion.div
+              key={selectedItem.slug}
+              className="work-detail__content"
+              custom={detailDirection}
+              variants={workDetailVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={reduceMotion ? { duration: 0 } : {
+                duration: 0.24,
+                ease: [0.22, 1, 0.36, 1],
+              }}
             >
-              ×
-            </button>
-            <div className="work-detail__image-wrap">
-              <Image
-                className="work-detail__image"
-                src={selectedItem.image}
-                alt={selectedItem.alt}
-                fill
-                sizes="(max-width: 700px) 100vw, 56vw"
-                quality={90}
-                style={{ objectPosition: selectedItem.imagePosition ?? 'center' }}
-              />
-            </div>
-            <div className="work-detail__body">
-              <p className="work-detail__meta">{selectedItem.meta}</p>
-              <h2 id="work-detail-title" className="work-detail__title">{selectedItem.title}</h2>
-              <p className="work-detail__description">{selectedItem.description}</p>
-              {selectedItem.specs?.filter((spec) => spec.label.trim() && spec.value.trim()).length ? (
-                <dl className="work-detail__specs">
-                  {selectedItem.specs
-                    .filter((spec) => spec.label.trim() && spec.value.trim())
-                    .map((spec) => (
-                      <div className="work-detail__spec" key={spec.label}>
-                        <dt>{spec.label}</dt>
-                        <dd>{spec.value}</dd>
-                      </div>
-                    ))}
-                </dl>
-              ) : null}
-              <div className="work-detail__actions">
-                <button type="button" onClick={() => openQuote(selectedItem)}>
-                  Request a quote for this <span aria-hidden="true">↗</span>
-                </button>
-                <a href={getWhatsAppLink(selectedItem)} target="_blank" rel="noopener noreferrer">
-                  Chat on WhatsApp <span aria-hidden="true">↗</span>
-                </a>
+              <button
+                ref={dialogCloseRef}
+                type="button"
+                className="work-detail__close"
+                aria-label="Close work details"
+                onClick={() => setSelectedItem(null)}
+              >
+                ×
+              </button>
+              <div className="work-detail__image-wrap">
+                <Image
+                  className="work-detail__image"
+                  src={selectedItem.image}
+                  alt={selectedItem.alt}
+                  fill
+                  sizes="(max-width: 700px) 100vw, 56vw"
+                  quality={90}
+                  style={{ objectPosition: selectedItem.imagePosition ?? 'center' }}
+                />
               </div>
-              <nav className="work-detail__navigation" aria-label="Browse filtered work">
-                <button
-                  type="button"
-                  aria-label="Previous work item"
-                  disabled={visibleItems.findIndex((item) => item.slug === selectedItem.slug) === 0}
-                  onClick={() => navigateDetail(-1)}
-                >
-                  ← Previous
-                </button>
-                <button
-                  type="button"
-                  aria-label="Next work item"
-                  disabled={visibleItems.findIndex((item) => item.slug === selectedItem.slug) === visibleItems.length - 1}
-                  onClick={() => navigateDetail(1)}
-                >
-                  Next →
-                </button>
-              </nav>
-            </div>
-          </div>
+              <div className="work-detail__body">
+                <p className="work-detail__meta">{selectedItem.meta}</p>
+                <h2 id="work-detail-title" className="work-detail__title">{selectedItem.title}</h2>
+                <p className="work-detail__description">{selectedItem.description}</p>
+                {selectedItem.specs?.filter((spec) => spec.label.trim() && spec.value.trim()).length ? (
+                  <dl className="work-detail__specs">
+                    {selectedItem.specs
+                      .filter((spec) => spec.label.trim() && spec.value.trim())
+                      .map((spec) => (
+                        <div className="work-detail__spec" key={spec.label}>
+                          <dt>{spec.label}</dt>
+                          <dd>{spec.value}</dd>
+                        </div>
+                      ))}
+                  </dl>
+                ) : null}
+                <div className="work-detail__actions">
+                  <button type="button" onClick={() => openQuote(selectedItem)}>
+                    Request a quote for this <span aria-hidden="true">↗</span>
+                  </button>
+                  <a href={getWhatsAppLink(selectedItem)} target="_blank" rel="noopener noreferrer">
+                    Chat on WhatsApp <span aria-hidden="true">↗</span>
+                  </a>
+                </div>
+                <nav className="work-detail__navigation" aria-label="Browse filtered work">
+                  <button
+                    type="button"
+                    aria-label="Previous work item"
+                    disabled={visibleItems.findIndex((item) => item.slug === selectedItem.slug) === 0}
+                    onClick={() => navigateDetail(-1)}
+                  >
+                    ← Previous
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next work item"
+                    disabled={visibleItems.findIndex((item) => item.slug === selectedItem.slug) === visibleItems.length - 1}
+                    onClick={() => navigateDetail(1)}
+                  >
+                    Next →
+                  </button>
+                </nav>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </dialog>
       )}
 
