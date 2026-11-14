@@ -91,6 +91,7 @@ const services = [
 
 const HIGHLIGHT_LINE = 0.5;
 const SERVICE_HYSTERESIS_PX = 12;
+const SERVICES_PIN_TOP = 76;
 
 const setImages = [
   { src: '/media/drift.webp', alt: 'Landscape between takes at golden hour', caption: 'ON THE STITCHING FLOOR — SIALKOT' },
@@ -103,6 +104,8 @@ export function AboutExperience() {
   const storyRef = useRef<HTMLElement | null>(null);
   const statementRef = useRef<HTMLHeadingElement | null>(null);
   const fallbackRef = useRef<HTMLSpanElement | null>(null);
+  const servicesRef = useRef<HTMLElement | null>(null);
+  const servicesWindowRef = useRef<HTMLDivElement | null>(null);
   const servicesListRef = useRef<HTMLUListElement | null>(null);
   const hasStoryAnimationStarted = useRef(false);
   const activeServiceRef = useRef(-1);
@@ -170,6 +173,101 @@ export function AboutExperience() {
       window.cancelAnimationFrame(frameId);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', scheduleUpdate);
+    };
+  }, [activateService]);
+
+  useLayoutEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const section = servicesRef.current;
+    const windowElement = servicesWindowRef.current;
+    const list = servicesListRef.current;
+    if (
+      !section
+      || !windowElement
+      || !list
+      || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) return;
+
+    const rows = Array.from(list.querySelectorAll<HTMLElement>('.about-services__item'));
+    if (rows.length < 2) return;
+
+    const step = 1 / (rows.length - 1);
+    let settledIndex = 0;
+    let snapTargetIndex = 0;
+    activateService(0);
+    section.dataset.scrollStaged = 'true';
+    const context = gsap.context(() => {
+      gsap.fromTo(
+        list,
+        {
+          y: () => window.innerHeight * HIGHLIGHT_LINE
+            - SERVICES_PIN_TOP
+            - windowElement.offsetTop
+            - rows[0].offsetTop
+            - rows[0].offsetHeight / 2,
+        },
+        {
+          y: () => window.innerHeight * HIGHLIGHT_LINE
+            - SERVICES_PIN_TOP
+            - windowElement.offsetTop
+            - rows[rows.length - 1].offsetTop
+            - rows[rows.length - 1].offsetHeight / 2,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: section,
+            start: `top top+=${SERVICES_PIN_TOP}`,
+            end: () => `+=${window.innerHeight * (rows.length - 1) * 0.55}`,
+            pin: section,
+            scrub: 0.35,
+            snap: {
+              snapTo: (progress) => {
+                if (progress > settledIndex * step + 0.001) {
+                  snapTargetIndex = Math.min(settledIndex + 1, rows.length - 1);
+                } else if (progress < settledIndex * step - 0.001) {
+                  snapTargetIndex = Math.max(settledIndex - 1, 0);
+                } else {
+                  snapTargetIndex = settledIndex;
+                }
+                return snapTargetIndex * step;
+              },
+              delay: 0.08,
+              duration: { min: 0.15, max: 0.45 },
+              ease: 'power1.inOut',
+              onStart: () => {
+                settledIndex = snapTargetIndex;
+                activateService(settledIndex);
+                scrollServiceRef.current = settledIndex;
+              },
+              onComplete: () => {
+                settledIndex = snapTargetIndex;
+                activateService(settledIndex);
+                scrollServiceRef.current = settledIndex;
+              },
+            },
+            onEnter: () => {
+              settledIndex = 0;
+              snapTargetIndex = 0;
+              activateService(0);
+              scrollServiceRef.current = 0;
+            },
+            onEnterBack: () => {
+              settledIndex = rows.length - 1;
+              snapTargetIndex = settledIndex;
+              activateService(settledIndex);
+              scrollServiceRef.current = settledIndex;
+            },
+            invalidateOnRefresh: true,
+          },
+        },
+      );
+    }, section);
+
+    ScrollTrigger.refresh();
+
+    return () => {
+      context.revert();
+      delete section.dataset.scrollStaged;
     };
   }, [activateService]);
 
@@ -409,6 +507,7 @@ export function AboutExperience() {
         </section>
 
         <section
+          ref={servicesRef}
           className="about-services"
           aria-labelledby="about-services-heading"
           onMouseLeave={() => {
@@ -418,51 +517,53 @@ export function AboutExperience() {
         >
           <p className="about-section__eyebrow">(SERVICES)</p>
           <h2 className="about-section__sr-heading" id="about-services-heading">What I do</h2>
-          <ul
-            ref={servicesListRef}
-            className="about-services__list"
-            data-has-active={activeService >= 0}
-            onMouseMove={(event) => {
-              if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-              const target = event.target;
-              if (!(target instanceof Element)) return;
-              const row = target.closest<HTMLElement>('.about-services__item');
-              if (!row || !event.currentTarget.contains(row)) return;
-              const index = Number(row.dataset.serviceIndex);
-              if (!Number.isInteger(index)) return;
-              manualServiceRef.current = index;
-              activateService(index);
-            }}
-          >
-            {services.map((service, index) => (
-              <li
-                className="about-services__item"
-                data-active={activeService === index}
-                data-service-index={index}
-                key={service.name}
-                tabIndex={0}
-                onMouseEnter={() => {
-                  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-                  manualServiceRef.current = index;
-                  activateService(index);
-                }}
-                onFocus={(event) => {
-                  if (!event.currentTarget.matches(':focus-visible')) return;
-                  manualServiceRef.current = index;
-                  activateService(index);
-                }}
-                onBlur={(event) => {
-                  if (!event.currentTarget.parentElement?.contains(event.relatedTarget as Node | null)) {
-                    manualServiceRef.current = null;
-                    activateService(scrollServiceRef.current ?? 0);
-                  }
-                }}
-              >
-                <span className="about-services__name">{service.name}</span>
-                <span className="about-services__details">{service.details}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="about-services__window" ref={servicesWindowRef}>
+            <ul
+              ref={servicesListRef}
+              className="about-services__list"
+              data-has-active={activeService >= 0}
+              onMouseMove={(event) => {
+                if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+                const target = event.target;
+                if (!(target instanceof Element)) return;
+                const row = target.closest<HTMLElement>('.about-services__item');
+                if (!row || !event.currentTarget.contains(row)) return;
+                const index = Number(row.dataset.serviceIndex);
+                if (!Number.isInteger(index)) return;
+                manualServiceRef.current = index;
+                activateService(index);
+              }}
+            >
+              {services.map((service, index) => (
+                <li
+                  className="about-services__item"
+                  data-active={activeService === index}
+                  data-service-index={index}
+                  key={service.name}
+                  tabIndex={0}
+                  onMouseEnter={() => {
+                    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+                    manualServiceRef.current = index;
+                    activateService(index);
+                  }}
+                  onFocus={(event) => {
+                    if (!event.currentTarget.matches(':focus-visible')) return;
+                    manualServiceRef.current = index;
+                    activateService(index);
+                  }}
+                  onBlur={(event) => {
+                    if (!event.currentTarget.parentElement?.contains(event.relatedTarget as Node | null)) {
+                      manualServiceRef.current = null;
+                      activateService(scrollServiceRef.current ?? 0);
+                    }
+                  }}
+                >
+                  <span className="about-services__name">{service.name}</span>
+                  <span className="about-services__details">{service.details}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </section>
 
         <section className="about-set" aria-labelledby="about-set-heading">

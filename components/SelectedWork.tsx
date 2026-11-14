@@ -5,91 +5,21 @@ import Link from 'next/link';
 import { useLayoutEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-type Project = {
-  title: string;
-  client: string;
-  year: string;
-  category: string;
-  image: string;
-  alt: string;
-  objectPosition?: string;
-};
-
-const projects: Project[] = [
-  {
-    title: 'Solstice',
-    client: 'VOGUE ITALIA',
-    year: '2026',
-    category: 'FASHION',
-    image: '/media/solstice.webp',
-    alt: 'Fashion portrait for Solstice',
-    objectPosition: 'center 32%',
-  },
-  {
-    title: 'Lane Seven',
-    client: 'KORA SWIM',
-    year: '2026',
-    category: 'SPORT',
-    image: '/media/lane-seven.webp',
-    alt: 'Swimmer moving through blue water',
-    objectPosition: 'center 46%',
-  },
-  {
-    title: 'Terracotta Hour',
-    client: 'MAISON ORÉ',
-    year: '2026',
-    category: 'STILL LIFE',
-    image: '/media/terracotta-hour.webp',
-    alt: 'Red ceramic vessels arranged in afternoon light',
-    objectPosition: 'center 52%',
-  },
-  {
-    title: 'Drift',
-    client: 'SHORT FILM',
-    year: '2025',
-    category: 'FILM',
-    image: '/media/drift.webp',
-    alt: 'Quiet landscape at the end of the day',
-    objectPosition: 'center 56%',
-  },
-  {
-    title: 'Red Study',
-    client: 'VOGUE ITALIA',
-    year: '2025',
-    category: 'BEAUTY',
-    image: '/media/solstice.webp',
-    alt: 'Close fashion portrait in warm light',
-    objectPosition: 'center 68%',
-  },
-  {
-    title: 'Blue Hour',
-    client: 'KORA SWIM',
-    year: '2024',
-    category: 'CAMPAIGN',
-    image: '/media/lane-seven.webp',
-    alt: 'Blue pool water in late afternoon',
-    objectPosition: 'center 72%',
-  },
-];
+import { workItems, type WorkItem } from '@/data/work';
 
 const projectColumns = [
-  [projects[0], projects[2], projects[4]],
-  [projects[1], projects[3], projects[5]],
+  workItems.filter((_, index) => index % 2 === 0),
+  workItems.filter((_, index) => index % 2 === 1),
 ];
 
-const projectImageStyles = projects.map((project) => ({
-  objectPosition: project.objectPosition ?? 'center',
-}));
-
-function WorkCard({ project, index }: { project: Project; index: number }) {
+function WorkCard({ project }: { project: WorkItem }) {
   return (
     <article className="work-card">
       <Link
         className="work-card__link"
         href="/work"
         data-cursor-label="View ↗"
-        aria-label={`View ${project.title} project`}
+        aria-label={`View ${project.title}, ${project.category} project`}
       >
         <div className="work-card__reveal">
           <div className="work-card__media">
@@ -99,7 +29,7 @@ function WorkCard({ project, index }: { project: Project; index: number }) {
               alt={project.alt}
               fill
               sizes="(max-width: 700px) 100vw, 48vw"
-              style={projectImageStyles[index]}
+              style={{ objectPosition: project.imagePosition ?? 'center' }}
               loading="lazy"
             />
             <span className="work-card__tag">{project.category}</span>
@@ -107,7 +37,7 @@ function WorkCard({ project, index }: { project: Project; index: number }) {
         </div>
         <div className="work-card__meta">
           <span className="work-card__title">{project.title}</span>
-          <span className="work-card__client">{project.client} — {project.year}</span>
+          <span className="work-card__client">{project.meta}</span>
         </div>
       </Link>
     </article>
@@ -165,8 +95,7 @@ export function SelectedWork() {
             key={`column-${columnIndex}`}
           >
             {column.map((project) => {
-              const index = projects.indexOf(project);
-              return <WorkCard key={project.title} project={project} index={index} />;
+              return <WorkCard key={project.slug} project={project} />;
             })}
           </div>
         ))}

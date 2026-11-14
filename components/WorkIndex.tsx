@@ -182,7 +182,7 @@ export function WorkIndex() {
       <div ref={rootRef} className="work-index" data-entrance-ready="false">
         <header ref={introRef} className="work-index__intro">
           <p className="work-index__eyebrow work-index__reveal">(WORK) — 2023–26</p>
-          <h1 className="work-index__title work-index__reveal">WORK</h1>
+
           <LayoutGroup id="work-categories">
             <div className="work-index__filters work-index__reveal" role="group" aria-label="Filter projects by category">
               {filterCategories.map((category) => {
