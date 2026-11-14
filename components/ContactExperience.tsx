@@ -514,7 +514,7 @@ export function ContactExperience() {
     <AppShell heroTone="light" overlayHeader>
       <section ref={panelRef} className="contact-page" aria-labelledby="contact-heading">
         <div className="contact-page__content">
-          <p className="contact-page__eyebrow">(CONTACT)</p>
+          <p className="contact-page__eyebrow"></p>
           <h1 id="contact-heading" className="contact-page__title" aria-label="SAY">
             {titleLines?.map((line, lineIndex) => (
               <span className="contact-page__title-line" key={`title-line-${lineIndex}`}>
