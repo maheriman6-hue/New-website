@@ -1,13 +1,18 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AppShell } from '@/components/AppShell';
 import { PortraitReveal } from '@/components/PortraitReveal';
 import { QuoteRequestModal } from '@/components/QuoteRequestModal';
-import { RecognitionList } from '@/components/RecognitionList';
 import {
   createEntranceTimeline,
   ENTRANCE_EASE,
@@ -80,6 +85,33 @@ const statistics = [
   { value: 9, label: 'REPEAT CLIENTS' },
 ];
 
+const processSteps = [
+  {
+    title: 'Share your design',
+    summary: 'Tech pack, sketch or idea',
+    description:
+      'Send whatever you have. A full tech pack, a rough sketch or just a reference photo is enough to start. We review it and reply with questions and a quote.',
+    details: ['Tech pack', 'Sketch', 'Reference photo'],
+    timing: 'Reply within 24 hours',
+  },
+  {
+    title: 'Approve your sample',
+    summary: 'Fit · fabric · print check',
+    description:
+      'We make a sample and send you photos and measurements. You check the fit, fabric and print, and we adjust until it is right. Nothing goes into production without your approval.',
+    details: ['Fit', 'Fabric', 'Print check'],
+    timing: 'Sample ready in 7 to 10 days',
+  },
+  {
+    title: 'We produce and ship',
+    summary: 'Quality checked · tracked shipping',
+    description:
+      'Your order goes into production. Every piece is checked before packing, then shipped with a tracking number so you can follow it to your door.',
+    details: ['Quality checked', 'Tracked shipping'],
+    timing: 'Production and delivery time depends on quantity',
+  },
+];
+
 const services = [
   { name: 'SPORTSWEAR', details: 'JERSEYS · TRACKSUITS · TRAINING WEAR' },
   { name: 'STREETWEAR', details: '	HOODIES · T-SHIRTS · CARGO PANTS' },
@@ -107,12 +139,14 @@ export function AboutExperience() {
   const servicesRef = useRef<HTMLElement | null>(null);
   const servicesWindowRef = useRef<HTMLDivElement | null>(null);
   const servicesListRef = useRef<HTMLUListElement | null>(null);
+  const processStepsRef = useRef<HTMLOListElement | null>(null);
   const hasStoryAnimationStarted = useRef(false);
   const activeServiceRef = useRef(-1);
   const scrollServiceRef = useRef<number | null>(null);
   const manualServiceRef = useRef<number | null>(null);
   const [quoteLines, setQuoteLines] = useState<string[][] | null>(null);
   const [activeService, setActiveService] = useState(-1);
+  const [openProcessStep, setOpenProcessStep] = useState(0);
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
 
   const activateService = useCallback((index: number) => {
@@ -120,6 +154,23 @@ export function AboutExperience() {
     activeServiceRef.current = index;
     setActiveService(index);
   }, []);
+
+  const handleProcessStepKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    const nextIndex = event.key === 'ArrowDown'
+      ? index + 1
+      : event.key === 'ArrowUp'
+        ? index - 1
+        : -1;
+    if (nextIndex < 0 || nextIndex >= processSteps.length) return;
+
+    event.preventDefault();
+    processStepsRef.current
+      ?.querySelectorAll<HTMLButtonElement>('.about-process__trigger')[nextIndex]
+      ?.focus();
+  };
 
   useLayoutEffect(() => {
     const list = servicesListRef.current;
@@ -591,11 +642,65 @@ export function AboutExperience() {
         </section>
 
         <section className="about-recognition" aria-labelledby="about-recognition-heading">
-          <div className="about-section__heading">
-            <p className="about-section__eyebrow">(PROCESS)</p>
-            <h2 id="about-recognition-heading">Idea to doorstep.</h2>
+          <div className="about-process">
+            <header className="about-process__header">
+              <p className="about-section__eyebrow">(PROCESS)</p>
+              <h2 id="about-recognition-heading">Idea to doorstep.</h2>
+            </header>
+            <ol className="about-process__steps" ref={processStepsRef}>
+              {processSteps.map((step, index) => {
+                const isOpen = openProcessStep === index;
+                const triggerId = `about-process-trigger-${index + 1}`;
+                const panelId = `about-process-panel-${index + 1}`;
+
+                return (
+                  <li
+                    className="about-process__step"
+                    data-open={isOpen}
+                    data-done={index < openProcessStep}
+                    key={step.title}
+                  >
+                    <button
+                      className="about-process__trigger"
+                      type="button"
+                      id={triggerId}
+                      aria-expanded={isOpen}
+                      aria-controls={panelId}
+                      onClick={() => setOpenProcessStep(index)}
+                      onKeyDown={(event) => handleProcessStepKeyDown(event, index)}
+                    >
+                      <span className="about-process__number">{String(index + 1).padStart(2, '0')}</span>
+                      <span className="about-process__title">{step.title}</span>
+                      <span className="about-process__summary">{step.summary}</span>
+                      <span className="about-process__icon" aria-hidden="true" />
+                    </button>
+                    <div
+                      className="about-process__panel"
+                      id={panelId}
+                      role="region"
+                      aria-labelledby={triggerId}
+                      aria-hidden={!isOpen}
+                      inert={!isOpen}
+                    >
+                      <div className="about-process__panel-inner">
+                        <div className="about-process__detail">
+                          <p className="about-process__description">{step.description}</p>
+                          <div className="about-process__meta">
+                            <ul className="about-process__chips">
+                              {step.details.map((detail) => (
+                                <li key={detail}>{detail}</li>
+                              ))}
+                            </ul>
+                            <span className="about-process__timing">{step.timing}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
           </div>
-          <RecognitionList />
         </section>
       </div>
       {isQuoteOpen && <QuoteRequestModal onClose={() => setIsQuoteOpen(false)} />}
