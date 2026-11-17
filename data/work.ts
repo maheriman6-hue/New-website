@@ -5,6 +5,30 @@ export type WorkCategory =
   | 'Production'
   | 'Packaging';
 
+export const WORK_SUBCATEGORIES = {
+  Sportswear: [
+    { slug: 'football', label: 'Football' },
+    { slug: 'baseball', label: 'Baseball' },
+    { slug: 'basketball', label: 'Basketball' },
+    { slug: 'cricket', label: 'Cricket' },
+    { slug: 'running', label: 'Running' },
+    { slug: 'gym-training', label: 'Gym / Training' },
+    { slug: 'tracksuits', label: 'Tracksuits' },
+  ],
+  Streetwear: [
+    { slug: 'hoodies', label: 'Hoodies' },
+    { slug: 't-shirts', label: 'T-Shirts' },
+    { slug: 'sweatshirts', label: 'Sweatshirts' },
+    { slug: 'jackets', label: 'Jackets' },
+    { slug: 'joggers', label: 'Joggers' },
+    { slug: 'caps', label: 'Caps' },
+  ],
+} as const;
+
+export type WorkCategoryWithSubcategories = keyof typeof WORK_SUBCATEGORIES;
+export type WorkSubcategory =
+  (typeof WORK_SUBCATEGORIES)[WorkCategoryWithSubcategories][number]['slug'];
+
 export type WorkSpec = {
   label: string;
   value: string;
@@ -14,11 +38,13 @@ export type WorkItem = {
   slug: string;
   title: string;
   category: WorkCategory;
+  subcategory?: WorkSubcategory;
   image: string;
   alt: string;
   meta: string;
   description: string;
   imagePosition?: string;
+  imageFit?: 'contain' | 'cover';
   specs?: WorkSpec[];
 };
 
@@ -35,6 +61,7 @@ export const workItems: WorkItem[] = [
     slug: 'training-set',
     title: 'Training Set',
     category: 'Sportswear',
+    subcategory: 'gym-training',
     image: '/media/sportswear-hero.jpg',
     alt: 'Models wearing a coordinated black sportswear training set',
     meta: 'SPORTSWEAR — TEE, SHORTS, JACKET, LEGGINGS — 2026',
@@ -44,10 +71,22 @@ export const workItems: WorkItem[] = [
     slug: 'hoodie-cargo-set',
     title: 'Hoodie & Cargo Set',
     category: 'Streetwear',
+    subcategory: 'hoodies',
     image: '/media/streetwear-hero.jpg',
     alt: 'Model wearing a black hoodie and cargo pants',
     meta: 'STREETWEAR — HOODIE, CARGO PANTS — 2026',
     description: 'Heavyweight streetwear basics, made to your design, with your logo and tags.',
+  },
+  {
+    slug: 'premium-white-hoodie',
+    title: 'Premium White Hoodie',
+    category: 'Streetwear',
+    subcategory: 'hoodies',
+    image: '/media/premium-white-hoodie.webp',
+    alt: 'Zateef International white hoodie showcase with front and back views, fabric details, and product features',
+    meta: 'STREETWEAR — HOODIE — 2026',
+    description: 'A premium cotton hoodie with a modern fit, made to your design.',
+    imageFit: 'contain',
   },
   {
     slug: 'stitching-floor',
