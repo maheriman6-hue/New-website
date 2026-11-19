@@ -1,9 +1,4 @@
-export type WorkCategory =
-  | 'Sportswear'
-  | 'Streetwear'
-  | 'Private Label'
-  | 'Production'
-  | 'Packaging';
+export type WorkCategory = string;
 
 export const WORK_SUBCATEGORIES = {
   Sportswear: [
@@ -25,9 +20,7 @@ export const WORK_SUBCATEGORIES = {
   ],
 } as const;
 
-export type WorkCategoryWithSubcategories = keyof typeof WORK_SUBCATEGORIES;
-export type WorkSubcategory =
-  (typeof WORK_SUBCATEGORIES)[WorkCategoryWithSubcategories][number]['slug'];
+export type WorkSubcategory = string;
 
 export type WorkSpec = {
   label: string;
@@ -38,23 +31,24 @@ export type WorkItem = {
   slug: string;
   title: string;
   category: WorkCategory;
+  categoryId?: string;
   subcategory?: WorkSubcategory;
+  subcategoryId?: string;
+  subcategoryLabel?: string;
   image: string;
   alt: string;
   meta: string;
   description: string;
+  caption?: string;
+  price?: number;
+  badge?: string;
+  featured?: boolean;
+  inStock?: boolean;
+  order?: number;
   imagePosition?: string;
   imageFit?: 'contain' | 'cover';
   specs?: WorkSpec[];
 };
-
-export const WORK_CATEGORIES: WorkCategory[] = [
-  'Sportswear',
-  'Streetwear',
-  'Private Label',
-  'Production',
-  'Packaging',
-];
 
 export const workItems: WorkItem[] = [
   {

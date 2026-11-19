@@ -26,22 +26,23 @@ import {
   type EntranceTriggerTiming,
 } from '@/lib/entranceMotion';
 import {
-  WORK_CATEGORIES,
   WORK_SUBCATEGORIES,
-  workItems,
-  type WorkCategory,
-  type WorkCategoryWithSubcategories,
   type WorkItem,
 } from '@/data/work';
+import { usePublicWorkCatalog } from '@/components/usePublicWorkCatalog';
 
 type QuoteContext = WorkItem | null | undefined;
 
-function hasSubcategories(category: WorkCategory): category is WorkCategoryWithSubcategories {
-  return category in WORK_SUBCATEGORIES;
+function getCategoryKey(item: WorkItem) {
+  return item.categoryId ?? item.category;
 }
 
-function getSubcategoryMenuId(category: WorkCategoryWithSubcategories) {
-  return `work-subcategory-menu-${category.toLowerCase()}`;
+function getSubcategoryKey(item: WorkItem) {
+  return item.subcategoryId ?? item.subcategory;
+}
+
+function getSubcategoryMenuId(category: string) {
+  return `work-subcategory-menu-${encodeURIComponent(category)}`;
 }
 
 const workDetailVariants = {
@@ -59,21 +60,24 @@ function getWhatsAppLink(item?: WorkItem) {
 }
 
 export function WorkIndex() {
-  const [activeCategory, setActiveCategory] = useState<WorkCategory | 'All'>('All');
+  const catalog = usePublicWorkCatalog();
+  const items = catalog.items;
+  const [activeCategory, setActiveCategory] = useState<string | 'All'>('All');
   const [selectedSubcategory, setSelectedSubcategory] = useState<{
-    category: WorkCategoryWithSubcategories;
-    subcategory: (typeof WORK_SUBCATEGORIES)[WorkCategoryWithSubcategories][number]['slug'];
+    category: string;
+    subcategory: string;
   } | null>(null);
-  const [openCategory, setOpenCategory] = useState<WorkCategoryWithSubcategories | null>(null);
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<{
     top: number;
     left: number;
     width: number;
     maxHeight: number;
   } | null>(null);
-  const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
+  const [selectedItemSlug, setSelectedItemSlug] = useState<string | null>(null);
   const [quoteContext, setQuoteContext] = useState<QuoteContext>(undefined);
   const [detailDirection, setDetailDirection] = useState<-1 | 1>(1);
+  const selectedItem = items.find((item) => item.slug === selectedItemSlug) ?? null;
   const detailOpen = selectedItem !== null;
   const reduceMotion = useReducedMotion();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -84,7 +88,7 @@ export function WorkIndex() {
   const dialogCloseRef = useRef<HTMLButtonElement | null>(null);
   const detailSwipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const cardRefs = useRef(new Map<string, HTMLButtonElement>());
-  const filterTriggerRefs = useRef(new Map<WorkCategoryWithSubcategories, HTMLButtonElement>());
+  const filterTriggerRefs = useRef(new Map<string, HTMLButtonElement>());
   const subcategoryMenuRef = useRef<HTMLDivElement | null>(null);
   const menuCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingMenuFocusRef = useRef<'first' | 'last' | null>(null);
@@ -104,26 +108,64 @@ export function WorkIndex() {
     setOpenCategory(null);
   }, [clearMenuCloseTimer]);
 
-  const visibleItems = useMemo(
-    () => {
-      if (activeCategory === 'All') return workItems;
+  const subcategoriesFor = useCallback((categoryKey: string) => {
+    const category = catalog.categories.find((entry) => entry.id === categoryKey);
+    if (catalog.hasManagedProducts && category) {
+      return catalog.subcategories
+        .filter((subcategory) => subcategory.categoryId === categoryKey)
+        .map((subcategory) => ({ key: subcategory.id, label: subcategory.name }));
+    }
 
-      return workItems.filter((item) => (
-        item.category === activeCategory
-        && (!selectedSubcategory
-          || selectedSubcategory.category !== activeCategory
-          || item.subcategory === selectedSubcategory.subcategory)
-      ));
-    },
-    [activeCategory, selectedSubcategory],
+    if (categoryKey in WORK_SUBCATEGORIES) {
+      return WORK_SUBCATEGORIES[categoryKey as keyof typeof WORK_SUBCATEGORIES]
+        .map((subcategory) => ({ key: subcategory.slug, label: subcategory.label }));
+    }
+
+    return [];
+  }, [catalog.categories, catalog.hasManagedProducts, catalog.subcategories]);
+  const categoryOptions = useMemo(() => {
+    const byKey = new Map<string, { key: string; label: string; order?: number }>();
+    for (const category of catalog.categories) {
+      byKey.set(category.id, {
+        key: category.id,
+        label: category.name,
+        order: category.order,
+      });
+    }
+    for (const item of items) {
+      const key = getCategoryKey(item);
+      if (byKey.has(key)) continue;
+      byKey.set(key, { key, label: item.category });
+    }
+    return Array.from(byKey.values()).sort((left, right) => (
+      (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER)
+      || left.label.localeCompare(right.label)
+    ));
+  }, [catalog.categories, items]);
+  const filterCategories = useMemo(
+    () => ['All', ...categoryOptions.map((category) => category.key)],
+    [categoryOptions],
   );
-  const filterCategories = useMemo(() => {
-    const populatedCategories = new Set(workItems.map((item) => item.category));
-    return [
-      'All' as const,
-      ...WORK_CATEGORIES.filter((category) => populatedCategories.has(category)),
-    ];
-  }, []);
+  const effectiveActiveCategory = activeCategory === 'All'
+    || categoryOptions.some((category) => category.key === activeCategory)
+    ? activeCategory
+    : 'All';
+  const effectiveSelectedSubcategory = selectedSubcategory
+    && categoryOptions.some((category) => category.key === selectedSubcategory.category)
+    && subcategoriesFor(selectedSubcategory.category)
+      .some((subcategory) => subcategory.key === selectedSubcategory.subcategory)
+    ? selectedSubcategory
+    : null;
+  const openCategoryKey = openCategory
+    && categoryOptions.some((category) => category.key === openCategory)
+    ? openCategory
+    : null;
+  const visibleItems = useMemo(() => items.filter((item) => (
+    (effectiveActiveCategory === 'All' || getCategoryKey(item) === effectiveActiveCategory)
+    && (!effectiveSelectedSubcategory
+      || effectiveSelectedSubcategory.category !== getCategoryKey(item)
+      || getSubcategoryKey(item) === effectiveSelectedSubcategory.subcategory)
+  )), [effectiveActiveCategory, effectiveSelectedSubcategory, items]);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -276,7 +318,7 @@ export function WorkIndex() {
     };
   }, [openCategory, closeSubcategoryMenu]);
 
-  function scheduleMenuClose(category: WorkCategoryWithSubcategories) {
+  function scheduleMenuClose(category: string) {
     clearMenuCloseTimer();
     menuCloseTimerRef.current = setTimeout(() => {
       const trigger = filterTriggerRefs.current.get(category);
@@ -291,7 +333,7 @@ export function WorkIndex() {
   }
 
   function openSubcategoryMenu(
-    category: WorkCategoryWithSubcategories,
+    category: string,
     focusEdge?: 'first' | 'last',
   ) {
     clearMenuCloseTimer();
@@ -306,7 +348,7 @@ export function WorkIndex() {
     setOpenCategory(category);
   }
 
-  function toggleSubcategoryMenu(category: WorkCategoryWithSubcategories) {
+  function toggleSubcategoryMenu(category: string) {
     clearMenuCloseTimer();
     if (openCategory === category) {
       closeSubcategoryMenu();
@@ -318,7 +360,7 @@ export function WorkIndex() {
 
   function handleSubcategoryMenuKeyDown(
     event: KeyboardEvent<HTMLDivElement>,
-    category: WorkCategoryWithSubcategories,
+    category: string,
   ) {
     const items = Array.from(
       event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
@@ -369,7 +411,7 @@ export function WorkIndex() {
 
   function openQuote(item?: WorkItem) {
     restoreCardFocusRef.current = false;
-    setSelectedItem(null);
+    setSelectedItemSlug(null);
     setQuoteContext(item ?? null);
   }
 
@@ -379,7 +421,7 @@ export function WorkIndex() {
     const nextItem = visibleItems[currentIndex + direction];
     if (!nextItem) return;
     setDetailDirection(direction);
-    setSelectedItem(nextItem);
+    setSelectedItemSlug(nextItem.slug);
   }
 
   function startDetailSwipe(event: PointerEvent<HTMLDialogElement>) {
@@ -402,7 +444,7 @@ export function WorkIndex() {
   function handleDialogKeyDown(event: KeyboardEvent<HTMLDialogElement>) {
     if (event.key === 'Escape') {
       event.preventDefault();
-      setSelectedItem(null);
+      setSelectedItemSlug(null);
       return;
     }
 
@@ -438,18 +480,22 @@ export function WorkIndex() {
             <div className="work-index__filters" role="group" aria-label="Filter products by category">
               {filterCategories.map((category) => {
                 const count = category === 'All'
-                  ? workItems.length
-                  : workItems.filter((item) => item.category === category).length;
-                const isActive = category === activeCategory;
-                const hasMenu = category !== 'All' && hasSubcategories(category);
-                const selectedSubcategoryLabel = hasMenu && selectedSubcategory?.category === category
-                  ? WORK_SUBCATEGORIES[category].find(
-                    (subcategory) => subcategory.slug === selectedSubcategory.subcategory,
+                  ? items.length
+                  : items.filter((item) => getCategoryKey(item) === category).length;
+                const categoryLabel = category === 'All'
+                  ? 'All'
+                  : categoryOptions.find((option) => option.key === category)?.label ?? category;
+                const subcategories = category === 'All' ? [] : subcategoriesFor(category);
+                const isActive = category === effectiveActiveCategory;
+                const hasMenu = subcategories.length > 0;
+                const selectedSubcategoryLabel = hasMenu && effectiveSelectedSubcategory?.category === category
+                  ? subcategories.find(
+                    (subcategory) => subcategory.key === effectiveSelectedSubcategory.subcategory,
                   )?.label
                   : undefined;
                 const filterName = selectedSubcategoryLabel
-                  ? `${category} / ${selectedSubcategoryLabel}`
-                  : category;
+                  ? `${categoryLabel} / ${selectedSubcategoryLabel}`
+                  : categoryLabel;
 
                 return (
                   <div
@@ -490,7 +536,7 @@ export function WorkIndex() {
                         }}
                         type="button"
                         className="work-index__filter-toggle"
-                        aria-label={`${openCategory === category ? 'Close' : 'Open'} ${category} subcategories`}
+                        aria-label={`${openCategory === category ? 'Close' : 'Open'} ${categoryLabel} subcategories`}
                         aria-haspopup="menu"
                         aria-expanded={openCategory === category}
                         aria-controls={openCategory === category ? getSubcategoryMenuId(category) : undefined}
@@ -534,13 +580,13 @@ export function WorkIndex() {
           </LayoutGroup>
         </header>
 
-        {openCategory && menuPosition && typeof document !== 'undefined' && createPortal(
+        {openCategoryKey && menuPosition && typeof document !== 'undefined' && createPortal(
           <motion.div
             ref={subcategoryMenuRef}
-            id={getSubcategoryMenuId(openCategory)}
+            id={getSubcategoryMenuId(openCategoryKey)}
             className="work-index__submenu"
             role="menu"
-            aria-label={`${openCategory} subcategories`}
+            aria-label={`${categoryOptions.find((category) => category.key === openCategoryKey)?.label ?? openCategoryKey} subcategories`}
             style={{
               top: menuPosition.top,
               left: menuPosition.left,
@@ -552,32 +598,33 @@ export function WorkIndex() {
             transition={reduceMotion ? { duration: 0 } : { duration: 0.17, ease: [0.22, 1, 0.36, 1] }}
             onPointerEnter={clearMenuCloseTimer}
             onPointerLeave={(event) => {
-              if (event.pointerType === 'mouse') scheduleMenuClose(openCategory);
+              if (event.pointerType === 'mouse') scheduleMenuClose(openCategoryKey);
             }}
-            onKeyDown={(event) => handleSubcategoryMenuKeyDown(event, openCategory)}
+            onKeyDown={(event) => handleSubcategoryMenuKeyDown(event, openCategoryKey)}
           >
-            {WORK_SUBCATEGORIES[openCategory].map((subcategory) => {
-              const count = workItems.filter((item) => (
-                item.category === openCategory && item.subcategory === subcategory.slug
+            {subcategoriesFor(openCategoryKey).map((subcategory) => {
+              const count = items.filter((item) => (
+                getCategoryKey(item) === openCategoryKey
+                && getSubcategoryKey(item) === subcategory.key
               )).length;
-              const isSelected = selectedSubcategory?.category === openCategory
-                && selectedSubcategory.subcategory === subcategory.slug;
+              const isSelected = effectiveSelectedSubcategory?.category === openCategoryKey
+                && effectiveSelectedSubcategory.subcategory === subcategory.key;
 
               return (
                 <button
-                  key={subcategory.slug}
+                  key={subcategory.key}
                   type="button"
                   role="menuitem"
                   tabIndex={-1}
                   aria-current={isSelected ? 'true' : undefined}
                   className={`work-index__submenu-item${isSelected ? ' is-active' : ''}${count === 0 ? ' is-empty' : ''}`}
                   onClick={() => {
-                    setActiveCategory(openCategory);
+                    setActiveCategory(openCategoryKey);
                     setSelectedSubcategory({
-                      category: openCategory,
-                      subcategory: subcategory.slug,
+                      category: openCategoryKey,
+                      subcategory: subcategory.key,
                     });
-                    filterTriggerRefs.current.get(openCategory)?.focus();
+                    filterTriggerRefs.current.get(openCategoryKey)?.focus();
                     closeSubcategoryMenu();
                   }}
                 >
@@ -592,6 +639,11 @@ export function WorkIndex() {
 
         <div ref={gridRef} className="work-index__grid">
           <AnimatePresence mode="popLayout" initial={false}>
+            {catalog.status === 'error' && (
+              <p className="work-index__catalog-error" role="status">
+                The live catalog is unavailable. Showing the saved work examples.
+              </p>
+            )}
             {visibleItems.length === 0 ? (
               <motion.p
                 key="empty"
@@ -630,7 +682,7 @@ export function WorkIndex() {
                   onClick={() => {
                     openerSlugRef.current = item.slug;
                     restoreCardFocusRef.current = true;
-                    setSelectedItem(item);
+                    setSelectedItemSlug(item.slug);
                   }}
                 >
                   <div className={`work-index__media${item.imageFit === 'contain' ? ' work-index__media--showcase' : ''}`}>
@@ -644,12 +696,19 @@ export function WorkIndex() {
                       fetchPriority={index === 0 ? 'high' : undefined}
                       style={{ objectPosition: item.imagePosition ?? 'center' }}
                       loading={index < 2 ? 'eager' : 'lazy'}
+                      unoptimized={item.image.startsWith('data:') || item.image.startsWith('https://')}
                     />
                     <span className="work-index__card-arrow" aria-hidden="true">↗</span>
                   </div>
                   <div className="work-index__meta">
                     <span className="work-index__card-category">{item.category}</span>
                     <span className="work-index__project-title">{item.title}</span>
+                    {(item.badge || typeof item.price === 'number') && (
+                      <span className="work-index__product-details">
+                        {item.badge && <span>{item.badge}</span>}
+                        {typeof item.price === 'number' && <span>Price {item.price.toLocaleString()}</span>}
+                      </span>
+                    )}
                   </div>
                 </button>
               </motion.article>
@@ -689,10 +748,10 @@ export function WorkIndex() {
           aria-labelledby="work-detail-title"
           onCancel={(event) => {
             event.preventDefault();
-            setSelectedItem(null);
+            setSelectedItemSlug(null);
           }}
           onClick={(event) => {
-            if (event.target === event.currentTarget) setSelectedItem(null);
+            if (event.target === event.currentTarget) setSelectedItemSlug(null);
           }}
           onKeyDown={handleDialogKeyDown}
           onPointerDown={startDetailSwipe}
@@ -718,7 +777,7 @@ export function WorkIndex() {
                 type="button"
                 className="work-detail__close"
                 aria-label="Close work details"
-                onClick={() => setSelectedItem(null)}
+                onClick={() => setSelectedItemSlug(null)}
               >
                 ×
               </button>
@@ -731,11 +790,21 @@ export function WorkIndex() {
                   sizes="(max-width: 700px) 100vw, 56vw"
                   quality={90}
                   style={{ objectPosition: selectedItem.imagePosition ?? 'center' }}
+                  unoptimized={selectedItem.image.startsWith('data:') || selectedItem.image.startsWith('https://')}
                 />
               </div>
               <div className="work-detail__body">
                 <p className="work-detail__meta">{selectedItem.meta}</p>
                 <h2 id="work-detail-title" className="work-detail__title">{selectedItem.title}</h2>
+                {(selectedItem.badge || typeof selectedItem.price === 'number' || selectedItem.inStock !== undefined) && (
+                  <p className="work-detail__product-details">
+                    {selectedItem.badge && <span>{selectedItem.badge}</span>}
+                    {typeof selectedItem.price === 'number' && <span>Price {selectedItem.price.toLocaleString()}</span>}
+                    {selectedItem.inStock !== undefined && (
+                      <span>{selectedItem.inStock ? 'In stock' : 'Currently unavailable'}</span>
+                    )}
+                  </p>
+                )}
                 <p className="work-detail__description">{selectedItem.description}</p>
                 {selectedItem.specs?.filter((spec) => spec.label.trim() && spec.value.trim()).length ? (
                   <dl className="work-detail__specs">

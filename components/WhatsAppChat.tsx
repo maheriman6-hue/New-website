@@ -28,6 +28,7 @@ const MAX_MESSAGE_LENGTH = 500;
 
 export function WhatsAppChat() {
   const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith('/admin');
   const panelId = useId();
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -39,11 +40,13 @@ export function WhatsAppChat() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
+    if (isAdminRoute) return;
     const timer = window.setTimeout(() => setIsReady(true), 2000);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [isAdminRoute]);
 
   useEffect(() => {
+    if (isAdminRoute) return;
     const syncDialogState = () => {
       const dialogOpen = document.querySelector('dialog[open]') !== null;
       setIsDialogOpen(dialogOpen);
@@ -60,7 +63,7 @@ export function WhatsAppChat() {
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [isAdminRoute]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -101,6 +104,8 @@ export function WhatsAppChat() {
     setIsOpen(false);
     buttonRef.current?.focus();
   }, [pathname, isOpen]);
+
+  if (isAdminRoute) return null;
 
   const hasMessage = message.trim().length > 0;
   const whatsappMessage = (hasMessage ? message : QUICK_REPLIES[0].message)

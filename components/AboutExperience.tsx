@@ -23,7 +23,6 @@ import {
 
 const ABOUT_STORY_QUOTE =
   'Every piece starts as a sketch and ends in someone’s wardrobe. We make everything in between: sportswear and streetwear that keep moving long after they leave our factory.';
-
 const ABOUT_TIMELINE_DELAY = 0.2;
 
 function measureQuoteLines(

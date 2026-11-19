@@ -1,4 +1,16 @@
 node_modules/
 .next/
+out/
+coverage/
+.netlify/
+.firebase/
+certificates/
+*.tsbuildinfo
+*.pem
+*.key
+*.log
 .env*
 !.env.example
+!.env.local.example
+.mcp.json
+.vscode/mcp.json

@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function hasRecentOwnerAuthentication() {
+      return request.auth != null
+        && request.auth.token.email == "maheriman6@gmail.com"
+        && request.auth.token.auth_time is int
+        && request.time.toMillis() >= request.auth.token.auth_time * 1000
+        && request.time.toMillis() < request.auth.token.auth_time * 1000 + 3600000;
+    }
+
+    function isAdmin() {
+      return hasRecentOwnerAuthentication();
+    }
+
+    match /siteContent/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /categories/{docId} {
+      allow read: if hasRecentOwnerAuthentication() || resource.data.visible == true;
+      allow create, update, delete: if hasRecentOwnerAuthentication();
+    }
+
+    match /subcategories/{docId} {
+      allow read: if hasRecentOwnerAuthentication() || resource.data.visible == true;
+      allow create, update, delete: if hasRecentOwnerAuthentication();
+    }
+
+    match /products/{docId} {
+      allow read: if hasRecentOwnerAuthentication() || resource.data.visible == true;
+      allow create, update, delete: if hasRecentOwnerAuthentication();
+    }
+
+    match /media/{docId} {
+      allow read: if hasRecentOwnerAuthentication() || resource.data.visible == true;
+      allow create, update, delete: if hasRecentOwnerAuthentication();
+    }
+
+    match /subscribers/{docId} {
+      allow read, write: if hasRecentOwnerAuthentication();
+    }
+
+  }
+}

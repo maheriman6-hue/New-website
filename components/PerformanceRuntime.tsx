@@ -1,12 +1,18 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useLayoutEffect } from 'react';
 import gsap from 'gsap';
 import Lenis from 'lenis';
 import { initializePerformanceMode, markLitePerformanceMode } from '@/lib/perf';
 
 export function PerformanceRuntime() {
+  const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith('/admin');
+
   useLayoutEffect(() => {
+    if (isAdminRoute) return;
+
     initializePerformanceMode();
 
     const lenis = new Lenis({ autoRaf: false });
@@ -50,7 +56,7 @@ export function PerformanceRuntime() {
       gsap.ticker.remove(onTick);
       lenis.destroy();
     };
-  }, []);
+  }, [isAdminRoute]);
 
   return null;
 }

@@ -2,15 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { workItems, type WorkItem } from '@/data/work';
-
-const projectColumns = [
-  workItems.filter((_, index) => index % 2 === 0),
-  workItems.filter((_, index) => index % 2 === 1),
-];
+import { usePublicWorkCatalog } from '@/components/usePublicWorkCatalog';
 
 function WorkCard({ project }: { project: WorkItem }) {
   return (
@@ -31,6 +27,7 @@ function WorkCard({ project }: { project: WorkItem }) {
               sizes="(max-width: 700px) 100vw, 48vw"
               style={{ objectPosition: project.imagePosition ?? 'center' }}
               loading="lazy"
+              unoptimized={project.image.startsWith('data:') || project.image.startsWith('https://')}
             />
             <span className="work-card__tag">{project.category}</span>
           </div>
@@ -45,6 +42,14 @@ function WorkCard({ project }: { project: WorkItem }) {
 }
 
 export function SelectedWork() {
+  const catalog = usePublicWorkCatalog();
+  const projects = catalog.hasManagedProducts
+    ? catalog.items.filter((item) => item.featured)
+    : workItems;
+  const projectColumns = useMemo(() => [
+    projects.filter((_, index) => index % 2 === 0),
+    projects.filter((_, index) => index % 2 === 1),
+  ], [projects]);
   const sectionRef = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
@@ -89,17 +94,22 @@ export function SelectedWork() {
       </div>
 
       <div className="selected-work__grid">
-        {projectColumns.map((column, columnIndex) => (
-          <div
-            className={['selected-work__column', columnIndex === 1 ? 'is-offset' : ''].join(' ')}
-            key={`column-${columnIndex}`}
-          >
-            {column.map((project) => {
-              return <WorkCard key={project.slug} project={project} />;
-            })}
-          </div>
-        ))}
+        {projects.length === 0 ? (
+          <p className="selected-work__empty">No featured products yet.</p>
+        ) : projectColumns.map((column, columnIndex) => (
+            <div
+              className={['selected-work__column', columnIndex === 1 ? 'is-offset' : ''].join(' ')}
+              key={`column-${columnIndex}`}
+            >
+              {column.map((project) => (
+                <WorkCard key={project.slug} project={project} />
+              ))}
+            </div>
+          ))}
       </div>
+      {catalog.status === 'error' && (
+        <p role="status">The live catalog is unavailable. Showing saved work examples.</p>
+      )}
     </section>
   );
 }

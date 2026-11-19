@@ -21,7 +21,7 @@ const nextConfig = {
     ],
   }),
   async headers() {
-    const headers = [
+    const commonHeaders = [
       {
         key: 'X-Content-Type-Options',
         value: 'nosniff',
@@ -42,22 +42,6 @@ const nextConfig = {
         key: 'Cross-Origin-Opener-Policy',
         value: 'same-origin',
       },
-      {
-        key: 'Content-Security-Policy',
-        value: [
-          "default-src 'self'",
-          "img-src 'self' data: blob:",
-          "style-src 'self' 'unsafe-inline'",
-          "font-src 'self'",
-          `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
-          "connect-src 'self'",
-          "form-action 'self'",
-          "base-uri 'self'",
-          "object-src 'none'",
-          "frame-ancestors 'none'",
-          ...(process.env.NODE_ENV === 'production' ? ['upgrade-insecure-requests'] : []),
-        ].join('; '),
-      },
       ...(process.env.NODE_ENV === 'production'
         ? [{
             key: 'Strict-Transport-Security',
@@ -66,10 +50,51 @@ const nextConfig = {
         : []),
     ];
 
-    return [{
-      source: '/:path*',
-      headers,
-    }];
+    const publicContentSecurityPolicy = [
+      "default-src 'self'",
+      "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://storage.googleapis.com https://www.google.com/images/cleardot.gif",
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self'",
+      `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+      "connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebaseinstallations.googleapis.com https://firebasestorage.googleapis.com",
+      "form-action 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      ...(process.env.NODE_ENV === 'production' ? ['upgrade-insecure-requests'] : []),
+    ].join('; ');
+
+    const adminContentSecurityPolicy = [
+      "default-src 'self'",
+      "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://storage.googleapis.com https://www.google.com/images/cleardot.gif",
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self'",
+      `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+      "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://*.firebasestorage.app https://firebasestorage.googleapis.com https://storage.googleapis.com",
+      "frame-src 'self' https://*.firebaseapp.com https://*.web.app",
+      "form-action 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      ...(process.env.NODE_ENV === 'production' ? ['upgrade-insecure-requests'] : []),
+    ].join('; ');
+
+    return [
+      {
+        source: '/((?!admin).*)',
+        headers: [
+          ...commonHeaders,
+          { key: 'Content-Security-Policy', value: publicContentSecurityPolicy },
+        ],
+      },
+      {
+        source: '/admin/:path*',
+        headers: [
+          ...commonHeaders,
+          { key: 'Content-Security-Policy', value: adminContentSecurityPolicy },
+        ],
+      },
+    ];
   },
 };
 

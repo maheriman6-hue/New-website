@@ -133,10 +133,9 @@ export function AppShell({
         <div className="footer-motion__wordmark mt-8 text-center text-[clamp(5rem,17vw,24rem)] font-display tracking-wide font-black uppercase leading-[0.8] tracking-[-0.08em] text-[#f2eee6]">
           ZATEEF
           <div className="text-[clamp(1.5rem,4vw,2.5rem)] font-mono tracking-[0.18em] text-[#f2eee6]/75">
-          INTERNATIONAL
+            INTERNATIONAL
           </div>
         </div>
-
       </footer>
     </div>
   );

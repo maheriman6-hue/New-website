@@ -1,16 +1,20 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 export function RouteTransition() {
   const router = useRouter();
+  const pathname = usePathname();
+  const isAdminRoute = pathname.startsWith('/admin');
   const [isVisible, setIsVisible] = useState(true);
   const [run, setRun] = useState(0);
   const timers = useRef<number[]>([]);
   const isTransitioning = useRef(true);
 
   useEffect(() => {
+    if (isAdminRoute) return;
+
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       isTransitioning.current = false;
     } else {
@@ -70,7 +74,9 @@ export function RouteTransition() {
       timers.current.forEach(window.clearTimeout);
       timers.current = [];
     };
-  }, [router]);
+  }, [isAdminRoute, router]);
+
+  if (isAdminRoute) return null;
 
   return (
     <div
