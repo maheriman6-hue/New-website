@@ -16,9 +16,9 @@ import {
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
-import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { deleteObject, ref } from 'firebase/storage';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, ReactNode } from 'react';
 import { auth, db, storage } from '@/lib/firebase';
 import { WORK_SUBCATEGORIES, workItems } from '@/data/work';
@@ -208,6 +208,10 @@ function getImageUrl(value: FieldValue | undefined): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
+function currentTimestamp() {
+  return Date.now();
+}
+
 async function shrinkImage(file: File, maxDimension: number, quality: number): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   const ratio = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
@@ -230,31 +234,68 @@ async function shrinkImage(file: File, maxDimension: number, quality: number): P
   });
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error ?? new Error('Could not read this image.'));
-    reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result);
-      else reject(new Error('Could not read this image.'));
-    };
-    reader.readAsDataURL(blob);
+type ImageUploadResult = { url: string; fileId: string };
+
+async function uploadImage(file: File): Promise<ImageUploadResult> {
+  const image = await shrinkImage(file, 1600, 0.85);
+  const user = auth.currentUser;
+  if (!user) throw new Error('Sign in again before uploading an image.');
+
+  const body = new FormData();
+  body.append('file', image, 'product.webp');
+  const response = await fetch('/api/admin/images', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${await user.getIdToken()}` },
+    body,
   });
+  let result: unknown;
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error('Image upload returned an invalid response.');
+  }
+  if (
+    typeof result !== 'object'
+    || result === null
+    || !('url' in result)
+    || typeof result.url !== 'string'
+    || !('fileId' in result)
+    || typeof result.fileId !== 'string'
+  ) {
+    const message = (
+      typeof result === 'object'
+      && result !== null
+      && 'error' in result
+      && typeof result.error === 'string'
+    ) ? result.error : 'Image upload failed.';
+    throw new Error(message);
+  }
+  if (!response.ok) throw new Error('error' in result && typeof result.error === 'string'
+    ? result.error
+    : 'Image upload failed.');
+  return { url: result.url, fileId: result.fileId };
 }
 
-async function uploadImage(file: File): Promise<string> {
-  const fullImage = await shrinkImage(file, 1600, 0.85);
-  try {
-    const path = `uploads/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.webp`;
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, fullImage, { contentType: 'image/webp' });
-    return await getDownloadURL(storageRef);
-  } catch {
-    const fallbackImage = await shrinkImage(file, 800, 0.7);
-    if (fallbackImage.size > 700_000) {
-      throw new Error('Image is too large. Try a smaller one.');
-    }
-    return blobToDataUrl(fallbackImage);
+async function deleteImageKitFile(fileId: string) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Sign in again to remove the unused image.');
+  const response = await fetch('/api/admin/images', {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${await user.getIdToken()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fileId }),
+  });
+  if (!response.ok) {
+    const result: unknown = await response.json().catch(() => null);
+    const message = (
+      typeof result === 'object'
+      && result !== null
+      && 'error' in result
+      && typeof result.error === 'string'
+    ) ? result.error : 'Could not remove the unused ImageKit image.';
+    throw new Error(message);
   }
 }
 
@@ -332,12 +373,26 @@ export default function AdminDashboard() {
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
   const toastTimer = useRef<number | null>(null);
+  const pendingImageFileIds = useRef(new Set<string>());
 
-  function showToast(message: string, error = false) {
+  const showToast = useCallback((message: string, error = false) => {
     setToast({ message, error });
     if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 2600);
-  }
+  }, []);
+
+  const closeDrawer = useCallback(() => {
+    if (uploadingField !== null) return;
+    setDrawerOpen(false);
+    for (const fileId of Array.from(pendingImageFileIds.current)) {
+      void deleteImageKitFile(fileId).then(() => {
+        pendingImageFileIds.current.delete(fileId);
+      }).catch((error: unknown) => {
+        console.error('Cancelled image upload could not be removed from ImageKit.', error);
+        showToast('Cancelled, but an unused image could not be removed from ImageKit.', true);
+      });
+    }
+  }, [showToast, uploadingField]);
 
   useEffect(() => {
     let active = true;
@@ -423,20 +478,21 @@ export default function AdminDashboard() {
       if (sessionTimer !== null) window.clearTimeout(sessionTimer);
       if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
     };
-  }, [router]);
+  }, [router, showToast]);
 
   useEffect(() => {
     if (!drawerOpen) return;
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') setDrawerOpen(false);
+      if (event.key === 'Escape') closeDrawer();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [drawerOpen]);
+  }, [closeDrawer, drawerOpen]);
 
   function setDraftValue(section: SectionKey, key: string, value: FieldValue) {
     const update = (current: EditableDraft) => {
       const next = { ...current, [key]: value };
+      if (key === 'image') next.imageFileId = '';
       const config = adminSections[section];
       for (const field of config.fields) {
         if ('dependsOn' in field && field.dependsOn === key) next[field.key] = '';
@@ -461,8 +517,10 @@ export default function AdminDashboard() {
   ) {
     setUploadingField(key);
     try {
-      const imageUrl = await uploadImage(file);
-      setDraftValue(section, key, imageUrl);
+      const uploadedImage = await uploadImage(file);
+      pendingImageFileIds.current.add(uploadedImage.fileId);
+      setDraftValue(section, key, uploadedImage.url);
+      setDraftValue(section, 'imageFileId', uploadedImage.fileId);
     } catch (error) {
       showToast(
         error instanceof Error
@@ -530,7 +588,13 @@ export default function AdminDashboard() {
     setSaving(true);
     try {
       const payload = fieldsPayload(config.fields, draft);
-      payload.updatedAt = Date.now();
+      if (typeof draft.imageFileId === 'string') {
+        payload.imageFileId = draft.imageFileId;
+      }
+      payload.updatedAt = currentTimestamp();
+      const previousImageFileId = editId
+        ? data[activeSection].find((record) => record.id === editId)?.imageFileId
+        : undefined;
       if (editId) {
         await setDoc(doc(db, activeSection, editId), payload, { merge: true });
         setData((current) => ({
@@ -540,7 +604,7 @@ export default function AdminDashboard() {
           ),
         }));
       } else {
-        payload.createdAt = Date.now();
+        payload.createdAt = currentTimestamp();
         const reference = await addDoc(collection(db, activeSection), payload);
         const newRecord = readRecord<AdminRecord>(reference.id, payload);
         setData((current) => ({
@@ -548,8 +612,48 @@ export default function AdminDashboard() {
           [activeSection]: [...current[activeSection], newRecord],
         }));
       }
-      setDrawerOpen(false);
-      showToast('Saved');
+      const savedImageFileId = typeof payload.imageFileId === 'string'
+        ? payload.imageFileId
+        : undefined;
+      pendingImageFileIds.current.delete(savedImageFileId ?? '');
+      let pendingImageCleanupFailed = false;
+      for (const pendingFileId of Array.from(pendingImageFileIds.current)) {
+        try {
+          await deleteImageKitFile(pendingFileId);
+          pendingImageFileIds.current.delete(pendingFileId);
+        } catch (error) {
+          console.error('Saved record, but an unused ImageKit upload could not be removed.', error);
+          pendingImageCleanupFailed = true;
+        }
+      }
+      let oldImageCleanupFailed = false;
+      if (
+        typeof draft.imageFileId === 'string'
+        &&
+        typeof previousImageFileId === 'string'
+        && previousImageFileId
+        && previousImageFileId !== payload.imageFileId
+      ) {
+        const imageSections = ['categories', 'subcategories', 'products', 'media'] as const;
+        const oldImageIsShared = imageSections.some((section) => (
+          data[section].some((record) => (
+            !(section === activeSection && record.id === editId)
+            && record.imageFileId === previousImageFileId
+          ))
+        ));
+        if (!oldImageIsShared) {
+          try {
+            await deleteImageKitFile(previousImageFileId);
+          } catch (error) {
+            console.error('Record saved, but its previous ImageKit image could not be removed.', error);
+            oldImageCleanupFailed = true;
+          }
+        }
+      }
+      closeDrawer();
+      showToast(oldImageCleanupFailed || pendingImageCleanupFailed
+        ? 'Saved, but an unused image could not be removed from ImageKit.'
+        : 'Saved', oldImageCleanupFailed || pendingImageCleanupFailed);
     } catch (error) {
       showToast(friendlyError(error, 'Couldn’t save. Check your Firestore rules.'), true);
     } finally {
@@ -751,6 +855,24 @@ export default function AdminDashboard() {
           }
         }
       }
+      const imageFileId = typeof record.imageFileId === 'string' ? record.imageFileId : undefined;
+      if (imageFileId) {
+        const imageSections = ['categories', 'subcategories', 'products', 'media'] as const;
+        const imageIsShared = imageSections.some((imageSection) => (
+          data[imageSection].some((item) => (
+            !(imageSection === section && item.id === record.id)
+            && item.imageFileId === imageFileId
+          ))
+        ));
+        if (!imageIsShared) {
+          try {
+            await deleteImageKitFile(imageFileId);
+          } catch (error) {
+            console.error('Admin record deleted, but its ImageKit image could not be removed.', error);
+            imageCleanupFailed = true;
+          }
+        }
+      }
 
       setData((current) => {
         const next: DashboardData = {
@@ -775,7 +897,7 @@ export default function AdminDashboard() {
         return next;
       });
       if (imageCleanupFailed) {
-        showToast(`${title} deleted, but its image could not be removed from Firebase Storage.`, true);
+        showToast(`${title} deleted, but its image could not be removed from image storage.`, true);
         return;
       }
       showToast('Deleted');
@@ -1104,7 +1226,7 @@ export default function AdminDashboard() {
           type="button"
           aria-label="Close editor"
           disabled={uploadingField !== null}
-          onClick={() => setDrawerOpen(false)}
+          onClick={closeDrawer}
         />
         <section
           className={`${styles.drawer} ${styles.drawerOpen}`}
@@ -1121,7 +1243,7 @@ export default function AdminDashboard() {
               type="button"
               aria-label="Close"
               disabled={uploadingField !== null}
-              onClick={() => setDrawerOpen(false)}
+              onClick={closeDrawer}
             >
               <Icon name="close" />
             </button>
@@ -1132,7 +1254,7 @@ export default function AdminDashboard() {
               className={styles.button}
               type="button"
               disabled={uploadingField !== null}
-              onClick={() => setDrawerOpen(false)}
+              onClick={closeDrawer}
             >
               Cancel
             </button>

@@ -1,5 +1,14 @@
 import os from 'node:os';
 
+const imageKitImageOrigin = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT).origin;
+  } catch {
+    return null;
+  }
+})();
+const imageOrigins = [...new Set(['https://ik.imagekit.io', imageKitImageOrigin].filter(Boolean))].join(' ');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -52,7 +61,7 @@ const nextConfig = {
 
     const publicContentSecurityPolicy = [
       "default-src 'self'",
-      "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://storage.googleapis.com https://www.google.com/images/cleardot.gif",
+      `img-src 'self' data: blob: https://firebasestorage.googleapis.com https://storage.googleapis.com ${imageOrigins} https://www.google.com/images/cleardot.gif`,
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self'",
       `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
@@ -66,7 +75,7 @@ const nextConfig = {
 
     const adminContentSecurityPolicy = [
       "default-src 'self'",
-      "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://storage.googleapis.com https://www.google.com/images/cleardot.gif",
+      `img-src 'self' data: blob: https://firebasestorage.googleapis.com https://storage.googleapis.com ${imageOrigins} https://www.google.com/images/cleardot.gif`,
       "style-src 'self' 'unsafe-inline'",
       "font-src 'self'",
       `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,

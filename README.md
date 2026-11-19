@@ -27,7 +27,7 @@ The app is connected to the `zateef-website` Firebase project. `.firebaserc` sel
 
 The Firebase web configuration is used by browser code and is not a service-account secret. Enable Email/Password in Firebase Authentication and set `NEXT_PUBLIC_OWNER_EMAIL` to the exact email of the owner account you create there. That account can sign in with its Firebase password without verifying its email; other Firebase accounts are rejected. Firestore Security Rules enforce the same owner-email check and the one-hour maximum session age.
 
-The current Work examples are in the Products catalog and can be edited from the admin panel. Public catalog reads are limited to visible categories, subcategories, products, and media. Firebase Storage uploads fall back to a small Firestore data URL if Storage is unavailable.
+The current Work examples are in the Products catalog and can be edited from the admin panel. Public catalog reads are limited to visible categories, subcategories, products, and media. Admin image uploads use the ImageKit server API; set `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT` and `NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY` from ImageKit, and set `IMAGEKIT_PRIVATE_KEY` as a server-only secret in local development and hosting settings. The upload route validates the Firebase owner session before using ImageKit, and the private key must never use the `NEXT_PUBLIC_` prefix.
 
 ## Stop
 

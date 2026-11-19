@@ -4,7 +4,6 @@ service firebase.storage {
     function hasRecentOwnerAuthentication() {
       return request.auth != null
         && request.auth.token.email == "maheriman6@gmail.com"
-        && request.auth.token.email_verified == true
         && request.auth.token.auth_time is int
         && request.time.toMillis() >= request.auth.token.auth_time * 1000
         && request.time.toMillis() < request.auth.token.auth_time * 1000 + 3600000;
