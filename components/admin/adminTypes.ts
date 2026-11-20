@@ -9,6 +9,7 @@ export interface AdminRecord {
 
 export interface CategoryDocument extends AdminRecord {
   name?: string;
+  slug?: string;
   image?: string;
   imageFit?: 'contain' | 'cover';
   caption?: string;
@@ -19,6 +20,7 @@ export interface CategoryDocument extends AdminRecord {
 
 export interface SubcategoryDocument extends AdminRecord {
   name?: string;
+  slug?: string;
   image?: string;
   imageFit?: 'contain' | 'cover';
   categoryId?: string;
@@ -29,6 +31,7 @@ export interface SubcategoryDocument extends AdminRecord {
 
 export interface ProductDocument extends AdminRecord {
   name?: string;
+  slug?: string;
   image?: string;
   alt?: string;
   price?: number;
@@ -56,6 +59,28 @@ export interface MediaDocument extends AdminRecord {
   visible?: boolean;
 }
 
+export interface HeroSlideDocument extends AdminRecord {
+  image?: string;
+  imageFileId?: string;
+  imageDesktop?: string;
+  imageDesktopFileId?: string;
+  alt?: string;
+  title?: string;
+  subtitle?: string;
+  buttonText?: string;
+  linkType?: string;
+  linkId?: string;
+  customUrl?: string;
+  order?: number;
+  visible?: boolean;
+  startAt?: number;
+  endAt?: number;
+  imagePosition?: string;
+  strongBottomShade?: boolean;
+  useMobileImage?: boolean;
+  useDesktopImage?: boolean;
+}
+
 export interface SubscriberDocument extends AdminRecord {
   email?: string;
   name?: string;
@@ -66,16 +91,19 @@ export type CollectionName =
   | 'categories'
   | 'subcategories'
   | 'products'
+  | 'heroSlides'
   | 'media'
   | 'subscribers';
 
 export type SectionKey = CollectionName;
-export type IconName = 'grid' | 'layers' | 'box' | 'image' | 'mail' | 'out';
+export type IconName = 'grid' | 'layers' | 'box' | 'image' | 'play' | 'mail' | 'out';
 
 interface FieldBase {
   key: string;
   label: string;
   required?: boolean;
+  helperText?: string;
+  showWhen?: { key: string; value: FieldValue | readonly FieldValue[] };
 }
 
 export interface HeadingField {
@@ -84,7 +112,7 @@ export interface HeadingField {
 }
 
 export interface TextField extends FieldBase {
-  type: 'text' | 'email' | 'number' | 'textarea' | 'color';
+  type: 'text' | 'email' | 'number' | 'textarea' | 'color' | 'datetime-local';
   defaultValue?: string | number;
 }
 
@@ -101,6 +129,9 @@ export interface ToggleField extends FieldBase {
 
 export interface ImageField extends FieldBase {
   type: 'image';
+  aspect?: number;
+  outputWidth?: number;
+  outputHeight?: number;
 }
 
 export interface ReferenceField extends FieldBase {
@@ -109,13 +140,18 @@ export interface ReferenceField extends FieldBase {
   dependsOn?: string;
 }
 
+export interface LinkReferenceField extends FieldBase {
+  type: 'link-reference';
+}
+
 export type FieldConfig =
   | HeadingField
   | TextField
   | SelectField
   | ToggleField
   | ImageField
-  | ReferenceField;
+  | ReferenceField
+  | LinkReferenceField;
 
 export interface ContentSectionConfig {
   label: string;
@@ -134,6 +170,7 @@ export interface DashboardData {
   categories: CategoryDocument[];
   subcategories: SubcategoryDocument[];
   products: ProductDocument[];
+  heroSlides: HeroSlideDocument[];
   media: MediaDocument[];
   subscribers: SubscriberDocument[];
 }

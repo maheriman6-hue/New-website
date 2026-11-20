@@ -9,11 +9,15 @@ import {
 import {
   addDoc,
   collection,
+  deleteField,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
+  query,
   setDoc,
   updateDoc,
+  where,
   writeBatch,
 } from 'firebase/firestore';
 import { deleteObject, ref } from 'firebase/storage';
@@ -24,6 +28,7 @@ import { auth, db, storage } from '@/lib/firebase';
 import { WORK_SUBCATEGORIES, workItems } from '@/data/work';
 import { adminSections } from './adminConfig';
 import { getAdminSessionExpiresAt } from './adminSession';
+import { ImageCropper } from './ImageCropper';
 import styles from './Admin.module.css';
 import type {
   AdminRecord,
@@ -35,7 +40,9 @@ import type {
   IconName,
   MediaDocument,
   ProductDocument,
+  SectionConfig,
   SectionKey,
+  HeroSlideDocument,
   SubscriberDocument,
   SubcategoryDocument,
 } from './adminTypes';
@@ -45,11 +52,21 @@ type ToastState = { message: string; error: boolean } | null;
 type LoadState = 'loading' | 'ready';
 type ContentSectionKey = SectionKey;
 type EditableDraft = Record<string, FieldValue>;
+type CropRequest = {
+  section: SectionKey;
+  key: string;
+  file: File;
+  imageUrl: string;
+  aspect: number;
+  outputWidth: number;
+  outputHeight: number;
+};
 
 const COLLECTIONS: CollectionName[] = [
   'categories',
   'subcategories',
   'products',
+  'heroSlides',
   'media',
   'subscribers',
 ];
@@ -58,6 +75,7 @@ const EMPTY_DATA: DashboardData = {
   categories: [],
   subcategories: [],
   products: [],
+  heroSlides: [],
   media: [],
   subscribers: [],
 };
@@ -90,6 +108,7 @@ const ICON_PATHS: Record<DashboardIconName, ReactNode> = {
       <path d="m21 15-5-5L5 21" />
     </>
   ),
+  play: <path d="m8 5 12 7-12 7z" />,
   mail: (
     <>
       <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -171,7 +190,13 @@ function editableDraft(fields: FieldConfig[], record?: AdminRecord): EditableDra
   for (const field of fields) {
     if (!('key' in field)) continue;
     const storedValue = record?.[field.key];
-    if (storedValue !== undefined) {
+    if (field.type === 'datetime-local' && typeof storedValue === 'number') {
+      const date = new Date(storedValue);
+      const localValue = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+        .toISOString()
+        .slice(0, 16);
+      draft[field.key] = localValue;
+    } else if (storedValue !== undefined) {
       draft[field.key] = storedValue;
     } else if (field.type === 'select') {
       draft[field.key] = field.defaultValue ?? field.options[0] ?? '';
@@ -182,11 +207,20 @@ function editableDraft(fields: FieldConfig[], record?: AdminRecord): EditableDra
   return draft;
 }
 
-function fieldsPayload(fields: FieldConfig[], draft: EditableDraft) {
-  const payload: Record<string, FieldValue> = {};
+function fieldsPayload(fields: FieldConfig[], draft: EditableDraft, editing: boolean) {
+  const payload: Record<string, FieldValue | ReturnType<typeof deleteField>> = {};
   for (const field of fields) {
     if (!('key' in field)) continue;
     const value = draft[field.key];
+    if (field.type === 'datetime-local') {
+      if (typeof value === 'string' && value) {
+        const timestamp = new Date(value).getTime();
+        if (Number.isFinite(timestamp)) payload[field.key] = timestamp;
+      } else if (editing) {
+        payload[field.key] = deleteField();
+      }
+      continue;
+    }
     if (value !== undefined) {
       payload[field.key] = value;
     } else if (field.type === 'select') {
@@ -208,11 +242,107 @@ function getImageUrl(value: FieldValue | undefined): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
+function getImageFileIds(record: AdminRecord | undefined) {
+  if (!record) return [];
+  return Array.from(new Set(Object.entries(record).flatMap(([key, value]) => (
+    key.endsWith('FileId') && typeof value === 'string' && value
+      ? [value]
+      : []
+  ))));
+}
+
+function getImageUrls(record: AdminRecord | undefined) {
+  if (!record) return [];
+  return ['image', 'imageDesktop'].flatMap((key) => {
+    const value = record[key];
+    return typeof value === 'string' && value ? [value] : [];
+  });
+}
+
+function getHeroSlideLinkState(record: AdminRecord, data: DashboardData) {
+  const linkType = typeof record.linkType === 'string' ? record.linkType : 'None';
+  const linkId = typeof record.linkId === 'string' ? record.linkId : '';
+  if (linkType === 'None' || !linkType) {
+    return { label: 'No link', warning: false, warningText: '' };
+  }
+  if (linkType === 'Custom URL') {
+    return { label: 'Links to Custom URL', warning: false, warningText: '' };
+  }
+  const targetSection = linkType === 'Category'
+    ? 'categories'
+    : linkType === 'Subcategory' ? 'subcategories'
+      : linkType === 'Product' ? 'products' : null;
+  if (!targetSection) return { label: 'No link', warning: false, warningText: '' };
+  const target = data[targetSection].find((item) => item.id === linkId);
+  if (!target) {
+    return {
+      label: `Links to ${linkType}: Missing item`,
+      warning: true,
+      warningText: 'Linked item missing',
+    };
+  }
+
+  let unavailable = target.visible === false;
+  if (targetSection === 'products') {
+    const category = data.categories.find((item) => item.id === target.categoryId);
+    if (!category || category.visible === false) unavailable = true;
+    if (typeof target.subcategoryId === 'string' && target.subcategoryId) {
+      const subcategory = data.subcategories.find((item) => (
+        item.id === target.subcategoryId && item.categoryId === target.categoryId
+      ));
+      if (!subcategory || subcategory.visible === false) unavailable = true;
+    } else if (data.subcategories.some((item) => (
+      item.categoryId === target.categoryId && item.visible !== false
+    ))) {
+      unavailable = true;
+    }
+  }
+  return {
+    label: `Links to ${linkType}: ${recordName(target)}${unavailable ? ' (unavailable)' : ''}`,
+    warning: unavailable,
+    warningText: target.visible === false ? 'Linked item hidden' : 'Linked target unavailable',
+  };
+}
+
+function isValidCustomUrl(value: string) {
+  const url = value.trim();
+  if (!url || url.startsWith('//')) return false;
+  if (/^https:\/\//i.test(url)) {
+    try {
+      return new URL(url).protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }
+  return !/^[a-z][a-z0-9+.-]*:/i.test(url);
+}
+
 function currentTimestamp() {
   return Date.now();
 }
 
-async function shrinkImage(file: File, maxDimension: number, quality: number): Promise<Blob> {
+const SLUG_SECTIONS = ['categories', 'subcategories', 'products'] as const;
+type SlugSection = (typeof SLUG_SECTIONS)[number];
+
+function isSlugSection(section: SectionKey): section is SlugSection {
+  return SLUG_SECTIONS.some((candidate) => candidate === section);
+}
+
+function createSlug(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+}
+
+function randomSlug() {
+  return `item-${crypto.randomUUID().replace(/-/g, '').slice(0, 8).toLowerCase()}`;
+}
+
+async function shrinkImage(file: Blob, maxDimension: number, quality: number): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   const ratio = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
@@ -236,13 +366,18 @@ async function shrinkImage(file: File, maxDimension: number, quality: number): P
 
 type ImageUploadResult = { url: string; fileId: string };
 
-async function uploadImage(file: File): Promise<ImageUploadResult> {
-  const image = await shrinkImage(file, 1600, 0.85);
+async function uploadImage(
+  file: File | Blob,
+  preserveDimensions = false,
+  folder: 'catalog' | 'hero' = 'catalog',
+): Promise<ImageUploadResult> {
+  const image = preserveDimensions ? file : await shrinkImage(file, 1600, 0.85);
   const user = auth.currentUser;
   if (!user) throw new Error('Sign in again before uploading an image.');
 
   const body = new FormData();
-  body.append('file', image, 'product.webp');
+  body.append('file', image, file instanceof File ? file.name : 'hero-crop.webp');
+  body.append('folder', folder);
   const response = await fetch('/api/admin/images', {
     method: 'POST',
     headers: { Authorization: `Bearer ${await user.getIdToken()}` },
@@ -274,6 +409,40 @@ async function uploadImage(file: File): Promise<ImageUploadResult> {
     ? result.error
     : 'Image upload failed.');
   return { url: result.url, fileId: result.fileId };
+}
+
+async function createInlineImageFallback(file: Blob, maxDataUrlLength: number): Promise<string> {
+  const image = await createImageBitmap(file);
+  const ratio = Math.min(1, 1280 / Math.max(image.width, image.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(image.width * ratio));
+  canvas.height = Math.max(1, Math.round(image.height * ratio));
+  const context = canvas.getContext('2d');
+  if (!context) {
+    image.close();
+    throw new Error('Image upload failed and a compressed fallback could not be prepared.');
+  }
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  image.close();
+
+  for (const quality of [0.75, 0.65, 0.55, 0.45, 0.35]) {
+    const compressed = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/webp', quality);
+    });
+    if (!compressed) continue;
+    const estimatedDataUrlLength = Math.ceil(compressed.size / 3) * 4 + 30;
+    if (estimatedDataUrlLength > maxDataUrlLength) continue;
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') resolve(reader.result);
+        else reject(new Error('Could not prepare the compressed image fallback.'));
+      };
+      reader.onerror = () => reject(new Error('Could not prepare the compressed image fallback.'));
+      reader.readAsDataURL(compressed);
+    });
+  }
+  throw new Error('Image upload failed and the compressed fallback exceeds the safe Firestore size limit. Choose a smaller image.');
 }
 
 async function deleteImageKitFile(fileId: string) {
@@ -316,6 +485,10 @@ function getItemMeta(
   record: AdminRecord,
   data: DashboardData,
 ) {
+  if (section === 'heroSlides') {
+    return getHeroSlideLinkState(record, data).label;
+  }
+
   if (section === 'categories') {
     const subcategoryCount = data.subcategories.filter((item) => item.categoryId === record.id).length;
     const productCount = data.products.filter((item) => item.categoryId === record.id).length;
@@ -363,6 +536,7 @@ export default function AdminDashboard() {
     categories: '',
     subcategories: '',
     products: '',
+    heroSlides: '',
     media: '',
     subscribers: '',
   });
@@ -371,9 +545,15 @@ export default function AdminDashboard() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [cropRequest, setCropRequest] = useState<CropRequest | null>(null);
+  const [heroIntervalInput, setHeroIntervalInput] = useState('3');
+  const [savingHeroInterval, setSavingHeroInterval] = useState(false);
+  const [generatingSlugs, setGeneratingSlugs] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const toastTimer = useRef<number | null>(null);
   const pendingImageFileIds = useRef(new Set<string>());
+  const cropObjectUrlRef = useRef<string | null>(null);
+  const slugManuallyEditedRef = useRef(false);
 
   const showToast = useCallback((message: string, error = false) => {
     setToast({ message, error });
@@ -393,6 +573,18 @@ export default function AdminDashboard() {
       });
     }
   }, [showToast, uploadingField]);
+
+  const closeCropper = useCallback(() => {
+    if (cropObjectUrlRef.current) {
+      URL.revokeObjectURL(cropObjectUrlRef.current);
+      cropObjectUrlRef.current = null;
+    }
+    setCropRequest(null);
+  }, []);
+
+  useEffect(() => () => {
+    if (cropObjectUrlRef.current) URL.revokeObjectURL(cropObjectUrlRef.current);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -438,19 +630,32 @@ export default function AdminDashboard() {
             categories,
             subcategories,
             products,
+            heroSlides,
             media,
             subscribers,
           ] = await Promise.all([
             loadCollection<CategoryDocument>('categories'),
             loadCollection<SubcategoryDocument>('subcategories'),
             loadCollection<ProductDocument>('products'),
+            loadCollection<HeroSlideDocument>('heroSlides'),
             loadCollection<MediaDocument>('media'),
             loadCollection<SubscriberDocument>('subscribers'),
           ]);
           if (!active || currentAuthChangeId !== authChangeId) return;
-          const loadedData = { categories, subcategories, products, media, subscribers };
+          const loadedData = { categories, subcategories, products, heroSlides, media, subscribers };
           setData(loadedData);
           setLoadState('ready');
+          void getDoc(doc(db, 'settings', 'site')).then((settingsSnapshot) => {
+            if (!active || currentAuthChangeId !== authChangeId) return;
+            const interval = settingsSnapshot.data()?.heroInterval;
+            if (typeof interval === 'number' && Number.isFinite(interval) && interval > 0) {
+              setHeroIntervalInput(String(interval));
+            }
+          }).catch((error: unknown) => {
+            if (!active || currentAuthChangeId !== authChangeId) return;
+            console.error('Could not load the homepage slideshow duration.', error);
+            showToast(friendlyError(error, 'Could not load slideshow settings.'), true);
+          });
         } catch (error) {
           if (!active || currentAuthChangeId !== authChangeId) return;
           setData(EMPTY_DATA);
@@ -483,16 +688,17 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!drawerOpen) return;
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') closeDrawer();
+      if (event.key === 'Escape' && !cropRequest) closeDrawer();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [closeDrawer, drawerOpen]);
+  }, [closeDrawer, cropRequest, drawerOpen]);
 
   function setDraftValue(section: SectionKey, key: string, value: FieldValue) {
     const update = (current: EditableDraft) => {
       const next = { ...current, [key]: value };
-      if (key === 'image') next.imageFileId = '';
+      if (key === 'image' || key === 'imageDesktop') next[`${key}FileId`] = '';
+      if (key === 'linkType') next.linkId = '';
       const config = adminSections[section];
       for (const field of config.fields) {
         if ('dependsOn' in field && field.dependsOn === key) next[field.key] = '';
@@ -505,8 +711,15 @@ export default function AdminDashboard() {
 
   function openDrawer(record?: AdminRecord) {
     const config = adminSections[activeSection];
+    slugManuallyEditedRef.current = false;
     setEditId(record?.id ?? null);
-    setDraft(editableDraft(config.fields, record));
+    const nextDraft = editableDraft(config.fields, record);
+    if (!record && activeSection === 'heroSlides') {
+      nextDraft.order = data.heroSlides.reduce((largest, slide) => (
+        typeof slide.order === 'number' ? Math.max(largest, slide.order) : largest
+      ), 0) + 1;
+    }
+    setDraft(nextDraft);
     setDrawerOpen(true);
   }
 
@@ -514,13 +727,14 @@ export default function AdminDashboard() {
     section: SectionKey,
     key: string,
     file: File,
+    preserveDimensions = false,
   ) {
     setUploadingField(key);
     try {
-      const uploadedImage = await uploadImage(file);
+      const uploadedImage = await uploadImage(file, preserveDimensions);
       pendingImageFileIds.current.add(uploadedImage.fileId);
       setDraftValue(section, key, uploadedImage.url);
-      setDraftValue(section, 'imageFileId', uploadedImage.fileId);
+      setDraftValue(section, `${key}FileId`, uploadedImage.fileId);
     } catch (error) {
       showToast(
         error instanceof Error
@@ -533,14 +747,90 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleCroppedImage(image: Blob) {
+    if (!cropRequest) return;
+    setUploadingField(cropRequest.key);
+    try {
+      try {
+        const uploadedImage = await uploadImage(image, true, 'hero');
+        pendingImageFileIds.current.add(uploadedImage.fileId);
+        setDraftValue(cropRequest.section, cropRequest.key, uploadedImage.url);
+        setDraftValue(cropRequest.section, `${cropRequest.key}FileId`, uploadedImage.fileId);
+      } catch (uploadError) {
+        console.error('ImageKit upload failed; preparing the compressed hero image fallback.', uploadError);
+        const otherImageKey = cropRequest.key === 'image' ? 'imageDesktop' : 'image';
+        const otherImage = draft[otherImageKey];
+        const otherImageSize = typeof otherImage === 'string' && otherImage.startsWith('data:')
+          ? otherImage.length
+          : 0;
+        const fallbackUrl = await createInlineImageFallback(
+          image,
+          Math.max(0, 850_000 - otherImageSize),
+        );
+        setDraftValue(cropRequest.section, cropRequest.key, fallbackUrl);
+        setDraftValue(cropRequest.section, `${cropRequest.key}FileId`, '');
+        showToast('ImageKit upload failed; a compressed image fallback is ready.');
+      }
+    } finally {
+      setUploadingField(null);
+    }
+  }
+
   async function saveContent() {
-    const config = adminSections[activeSection];
+    const config: SectionConfig = adminSections[activeSection];
+    const draftToSave = { ...draft };
+
+    if (isSlugSection(activeSection) && !editId && !slugManuallyEditedRef.current) {
+      const name = typeof draft.name === 'string' ? draft.name : '';
+      const currentSlug = typeof draft.slug === 'string' ? draft.slug.trim() : '';
+      if (!currentSlug) draftToSave.slug = createSlug(name) || randomSlug();
+    }
 
     for (const field of config.fields) {
       if (!('key' in field) || !('required' in field) || !field.required) continue;
-      const value = draft[field.key];
+      if (field.showWhen) {
+        const condition = field.showWhen.value;
+        if (Array.isArray(condition)
+          ? !condition.includes(draftToSave[field.showWhen.key])
+          : condition !== draftToSave[field.showWhen.key]) continue;
+      }
+      const value = draftToSave[field.key];
       if (value === undefined || value === '') {
         showToast(`Please fill in: ${field.label.replace(/\s\(.*/, '')}`, true);
+        return;
+      }
+    }
+
+    if (isSlugSection(activeSection)) {
+      const slug = typeof draftToSave.slug === 'string' ? draftToSave.slug.trim() : '';
+      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+        showToast('Slug must use lowercase letters, numbers and single hyphens only.', true);
+        return;
+      }
+      try {
+        const matches = await getDocs(query(
+          collection(db, activeSection),
+          where('slug', '==', slug),
+        ));
+        const duplicate = matches.docs.find((document) => document.id !== editId);
+        if (duplicate) {
+          const base = slug.replace(/-\d+$/, '');
+          let suffix = 2;
+          let suggestion = `${base}-${suffix}`;
+          while (true) {
+            const suggestionMatches = await getDocs(query(
+              collection(db, activeSection),
+              where('slug', '==', suggestion),
+            ));
+            if (!suggestionMatches.docs.some((document) => document.id !== editId)) break;
+            suffix += 1;
+            suggestion = `${base}-${suffix}`;
+          }
+          showToast(`Slug already exists. Try “${suggestion}”.`, true);
+          return;
+        }
+      } catch (error) {
+        showToast(friendlyError(error, 'Could not verify that the slug is unique.'), true);
         return;
       }
     }
@@ -585,37 +875,115 @@ export default function AdminDashboard() {
       }
     }
 
+    if (activeSection === 'heroSlides') {
+      if (draftToSave.useMobileImage !== true && draftToSave.useDesktopImage !== true) {
+        showToast('Enable at least one device image for this slide.', true);
+        return;
+      }
+
+      const linkType = draftToSave.linkType;
+      const linkId = draftToSave.linkId;
+      if (linkType === 'Category' || linkType === 'Subcategory' || linkType === 'Product') {
+        const targetSection = linkType === 'Category'
+          ? 'categories'
+          : linkType === 'Subcategory' ? 'subcategories' : 'products';
+        if (
+          typeof linkId !== 'string'
+          || !data[targetSection].some((record) => record.id === linkId)
+        ) {
+          showToast(`Choose a valid ${linkType.toLowerCase()} for this slide.`, true);
+          return;
+        }
+      } else if (linkType === 'Custom URL') {
+        const customUrl = typeof draftToSave.customUrl === 'string' ? draftToSave.customUrl : '';
+        if (!isValidCustomUrl(customUrl)) {
+          showToast('Use a relative URL or an https:// URL only.', true);
+          return;
+        }
+      }
+
+      const startAt = typeof draftToSave.startAt === 'string' && draftToSave.startAt
+        ? new Date(draftToSave.startAt).getTime()
+        : undefined;
+      const endAt = typeof draftToSave.endAt === 'string' && draftToSave.endAt
+        ? new Date(draftToSave.endAt).getTime()
+        : undefined;
+      if (
+        startAt !== undefined && !Number.isFinite(startAt)
+        || endAt !== undefined && !Number.isFinite(endAt)
+      ) {
+        showToast('Enter a valid start and end date.', true);
+        return;
+      }
+      if (
+        startAt !== undefined
+        && endAt !== undefined
+        && Number.isFinite(startAt)
+        && Number.isFinite(endAt)
+        && startAt >= endAt
+      ) {
+        showToast('The end date must be later than the start date.', true);
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      const payload = fieldsPayload(config.fields, draft);
-      if (typeof draft.imageFileId === 'string') {
-        payload.imageFileId = draft.imageFileId;
+      const payload = fieldsPayload(config.fields, draftToSave, Boolean(editId));
+      for (const [key, value] of Object.entries(draftToSave)) {
+        if (key.endsWith('FileId') && typeof value === 'string') payload[key] = value;
+      }
+      if (activeSection === 'heroSlides' && payload.linkType !== 'Custom URL') {
+        payload.customUrl = '';
+      }
+      if (activeSection === 'heroSlides' && payload.linkType !== 'Category'
+        && payload.linkType !== 'Subcategory' && payload.linkType !== 'Product') {
+        payload.linkId = '';
       }
       payload.updatedAt = currentTimestamp();
-      const previousImageFileId = editId
-        ? data[activeSection].find((record) => record.id === editId)?.imageFileId
+      const previousRecord = editId
+        ? data[activeSection].find((record) => record.id === editId)
         : undefined;
       if (editId) {
         await setDoc(doc(db, activeSection, editId), payload, { merge: true });
+        const localPayload = Object.fromEntries(
+          Object.entries(payload).filter(([, value]) => typeof value === 'string'
+            || typeof value === 'number' || typeof value === 'boolean'),
+        );
+        const clearedDateFields = config.fields.flatMap((field) => (
+          'key' in field
+          && field.type === 'datetime-local'
+          && (!draftToSave[field.key] || draftToSave[field.key] === '')
+            ? [field.key]
+            : []
+        ));
         setData((current) => ({
           ...current,
-          [activeSection]: current[activeSection].map((record) =>
-            record.id === editId ? { ...record, ...payload } : record,
-          ),
+          [activeSection]: current[activeSection].map((record) => {
+            if (record.id !== editId) return record;
+            const updated = { ...record, ...localPayload };
+            for (const key of clearedDateFields) delete updated[key];
+            return updated;
+          }),
         }));
       } else {
         payload.createdAt = currentTimestamp();
         const reference = await addDoc(collection(db, activeSection), payload);
-        const newRecord = readRecord<AdminRecord>(reference.id, payload);
+        const newRecord = readRecord<AdminRecord>(reference.id, Object.fromEntries(
+          Object.entries(payload).filter(([, value]) => typeof value === 'string'
+            || typeof value === 'number' || typeof value === 'boolean'),
+        ));
         setData((current) => ({
           ...current,
           [activeSection]: [...current[activeSection], newRecord],
         }));
       }
-      const savedImageFileId = typeof payload.imageFileId === 'string'
-        ? payload.imageFileId
-        : undefined;
-      pendingImageFileIds.current.delete(savedImageFileId ?? '');
+      const savedImageFileIds = new Set(
+        Object.entries(payload).flatMap(([key, value]) => (
+          key.endsWith('FileId') && typeof value === 'string' && value ? [value] : []
+        )),
+      );
+      savedImageFileIds.forEach((fileId) => pendingImageFileIds.current.delete(fileId));
       let pendingImageCleanupFailed = false;
       for (const pendingFileId of Array.from(pendingImageFileIds.current)) {
         try {
@@ -627,27 +995,23 @@ export default function AdminDashboard() {
         }
       }
       let oldImageCleanupFailed = false;
-      if (
-        typeof draft.imageFileId === 'string'
-        &&
-        typeof previousImageFileId === 'string'
-        && previousImageFileId
-        && previousImageFileId !== payload.imageFileId
-      ) {
-        const imageSections = ['categories', 'subcategories', 'products', 'media'] as const;
-        const oldImageIsShared = imageSections.some((section) => (
-          data[section].some((record) => (
-            !(section === activeSection && record.id === editId)
-            && record.imageFileId === previousImageFileId
-          ))
-        ));
-        if (!oldImageIsShared) {
-          try {
-            await deleteImageKitFile(previousImageFileId);
-          } catch (error) {
-            console.error('Record saved, but its previous ImageKit image could not be removed.', error);
-            oldImageCleanupFailed = true;
-          }
+      const nextImageFileIds = new Set(
+        Object.entries(payload).flatMap(([key, value]) => (
+          key.endsWith('FileId') && typeof value === 'string' && value ? [value] : []
+        )),
+      );
+      for (const oldFileId of getImageFileIds(previousRecord)) {
+        if (nextImageFileIds.has(oldFileId)) continue;
+        const isShared = COLLECTIONS.some((section) => data[section].some((record) => (
+          !(section === activeSection && record.id === editId)
+          && getImageFileIds(record).includes(oldFileId)
+        )));
+        if (isShared) continue;
+        try {
+          await deleteImageKitFile(oldFileId);
+        } catch (error) {
+          console.error('Record saved, but its previous ImageKit image could not be removed.', error);
+          oldImageCleanupFailed = true;
         }
       }
       closeDrawer();
@@ -658,6 +1022,88 @@ export default function AdminDashboard() {
       showToast(friendlyError(error, 'Couldn’t save. Check your Firestore rules.'), true);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function generateMissingSlugs(section: SlugSection) {
+    const records = data[section];
+    const reserved = new Set(records.flatMap((record) => (
+      typeof record.slug === 'string' && record.slug.trim() ? [record.slug.trim()] : []
+    )));
+    const updates = records.flatMap((record) => {
+      if (typeof record.slug === 'string' && record.slug.trim()) return [];
+      const base = createSlug(recordName(record)) || randomSlug();
+      let candidate = base;
+      let suffix = 2;
+      while (reserved.has(candidate)) {
+        candidate = `${base}-${suffix}`;
+        suffix += 1;
+      }
+      reserved.add(candidate);
+      return [{ id: record.id, slug: candidate }];
+    });
+
+    if (updates.length === 0) {
+      showToast('All items already have slugs.');
+      return;
+    }
+
+    setGeneratingSlugs(true);
+    let updatedCount = 0;
+    try {
+      for (let offset = 0; offset < updates.length; offset += 450) {
+        const batch = writeBatch(db);
+        const chunk = updates.slice(offset, offset + 450);
+        for (const update of chunk) {
+          batch.update(doc(db, section, update.id), {
+            slug: update.slug,
+            updatedAt: currentTimestamp(),
+          });
+        }
+        await batch.commit();
+        updatedCount += chunk.length;
+        const committedUpdates = new Map(chunk.map((update) => [update.id, update.slug]));
+        setData((current) => ({
+          ...current,
+          [section]: current[section].map((record) => {
+            const slug = committedUpdates.get(record.id);
+            return slug ? { ...record, slug } : record;
+          }),
+        }));
+      }
+      showToast(`Updated ${updatedCount} missing ${updatedCount === 1 ? 'slug' : 'slugs'}.`);
+    } catch (error) {
+      console.error(`Could not generate missing ${section} slugs.`, error);
+      showToast(
+        updatedCount
+          ? `Updated ${updatedCount} slugs before the remaining updates failed.`
+          : friendlyError(error, 'Could not generate missing slugs.'),
+        true,
+      );
+    } finally {
+      setGeneratingSlugs(false);
+    }
+  }
+
+  async function saveHeroInterval() {
+    const interval = Number(heroIntervalInput);
+    if (!Number.isFinite(interval) || interval <= 0) {
+      showToast('Slide duration must be a number greater than 0 seconds.', true);
+      return;
+    }
+
+    setSavingHeroInterval(true);
+    try {
+      await setDoc(doc(db, 'settings', 'site'), {
+        heroInterval: interval,
+        updatedAt: currentTimestamp(),
+      }, { merge: true });
+      setHeroIntervalInput(String(interval));
+      showToast('Slideshow duration saved.');
+    } catch (error) {
+      showToast(friendlyError(error, 'Could not save slideshow settings.'), true);
+    } finally {
+      setSavingHeroInterval(false);
     }
   }
 
@@ -699,6 +1145,7 @@ export default function AdminDashboard() {
         return {
           id: reference.id,
           name,
+          slug: createSlug(name) || randomSlug(),
           order,
           visible: true,
           createdAt: now,
@@ -723,6 +1170,7 @@ export default function AdminDashboard() {
           const subcategory: SubcategoryDocument = {
             id: reference.id,
             name: option.label,
+            slug: createSlug(option.label) || randomSlug(),
             categoryId: categoryRef.id,
             order,
             visible: true,
@@ -745,6 +1193,7 @@ export default function AdminDashboard() {
         const product: ProductDocument = {
           id: reference.id,
           name: item.title,
+          slug: createSlug(item.title) || randomSlug(),
           image: item.image,
           alt: item.alt,
           categoryId: categoryRef.id,
@@ -788,11 +1237,23 @@ export default function AdminDashboard() {
     if (section === 'categories') {
       const subcategoryCount = data.subcategories.filter((item) => item.categoryId === record.id).length;
       const productCount = data.products.filter((item) => item.categoryId === record.id).length;
-      warning = `\n\nIt has ${subcategoryCount} subcategories and ${productCount} products. They will stay but lose this category.`;
+      const heroSlideCount = data.heroSlides.filter((slide) => (
+        slide.linkType === 'Category' && slide.linkId === record.id
+      )).length;
+      warning = `\n\nIt has ${subcategoryCount} subcategories and ${productCount} products. They will stay but lose this category. ${heroSlideCount} hero slides link to it; they will remain but stop being clickable.`;
     }
     if (section === 'subcategories') {
       const productCount = data.products.filter((item) => item.subcategoryId === record.id).length;
-      warning = `\n\n${productCount} products use it. They will stay but lose this subcategory.`;
+      const heroSlideCount = data.heroSlides.filter((slide) => (
+        slide.linkType === 'Subcategory' && slide.linkId === record.id
+      )).length;
+      warning = `\n\n${productCount} products use it. They will stay but lose this subcategory. ${heroSlideCount} hero slides link to it; they will remain but stop being clickable.`;
+    }
+    if (section === 'products') {
+      const heroSlideCount = data.heroSlides.filter((slide) => (
+        slide.linkType === 'Product' && slide.linkId === record.id
+      )).length;
+      warning = `\n\n${heroSlideCount} hero slides link to this product; they will remain but stop being clickable.`;
     }
 
     const title = String(record[config.titleField] || 'this item');
@@ -829,48 +1290,43 @@ export default function AdminDashboard() {
       ]);
 
       let imageCleanupFailed = false;
-      const imageUrl = typeof record.image === 'string' ? record.image : undefined;
-      if (imageUrl?.startsWith('https://firebasestorage.googleapis.com/')) {
-        const imageIsShared = [
-          ...data.categories.filter((item) => section !== 'categories' || item.id !== record.id),
-          ...data.subcategories.filter((item) => section !== 'subcategories' || item.id !== record.id),
-          ...data.products.filter((item) => section !== 'products' || item.id !== record.id),
-          ...data.media.filter((item) => section !== 'media' || item.id !== record.id),
-        ].some((item) => item.image === imageUrl);
-
-        if (!imageIsShared) {
-          try {
-            const imageRef = ref(storage, imageUrl);
-            if (
-              imageRef.bucket === storage.app.options.storageBucket
-              && imageRef.fullPath.startsWith('uploads/')
-            ) {
-              await deleteObject(imageRef);
-            }
-          } catch (error) {
-            if (!(error instanceof FirebaseError) || error.code !== 'storage/object-not-found') {
-              console.error('Admin record deleted, but its Storage image could not be removed.', error);
-              imageCleanupFailed = true;
-            }
+      for (const imageUrl of getImageUrls(record)) {
+        if (!imageUrl.startsWith('https://firebasestorage.googleapis.com/')) continue;
+        const imageIsShared = COLLECTIONS.some((imageSection) => (
+          data[imageSection].some((item) => (
+            !(imageSection === section && item.id === record.id)
+            && getImageUrls(item).includes(imageUrl)
+          ))
+        ));
+        if (imageIsShared) continue;
+        try {
+          const imageRef = ref(storage, imageUrl);
+          if (
+            imageRef.bucket === storage.app.options.storageBucket
+            && imageRef.fullPath.startsWith('uploads/')
+          ) {
+            await deleteObject(imageRef);
+          }
+        } catch (error) {
+          if (!(error instanceof FirebaseError) || error.code !== 'storage/object-not-found') {
+            console.error('Admin record deleted, but its Storage image could not be removed.', error);
+            imageCleanupFailed = true;
           }
         }
       }
-      const imageFileId = typeof record.imageFileId === 'string' ? record.imageFileId : undefined;
-      if (imageFileId) {
-        const imageSections = ['categories', 'subcategories', 'products', 'media'] as const;
-        const imageIsShared = imageSections.some((imageSection) => (
+      for (const imageFileId of getImageFileIds(record)) {
+        const imageIsShared = COLLECTIONS.some((imageSection) => (
           data[imageSection].some((item) => (
             !(imageSection === section && item.id === record.id)
-            && item.imageFileId === imageFileId
+            && getImageFileIds(item).includes(imageFileId)
           ))
         ));
-        if (!imageIsShared) {
-          try {
-            await deleteImageKitFile(imageFileId);
-          } catch (error) {
-            console.error('Admin record deleted, but its ImageKit image could not be removed.', error);
-            imageCleanupFailed = true;
-          }
+        if (imageIsShared) continue;
+        try {
+          await deleteImageKitFile(imageFileId);
+        } catch (error) {
+          console.error('Admin record deleted, but its ImageKit image could not be removed.', error);
+          imageCleanupFailed = true;
         }
       }
 
@@ -925,12 +1381,20 @@ export default function AdminDashboard() {
     const id = `admin-field-${field.key}`;
     if (field.type === 'image') {
       const image = getImageUrl(value);
+      const cropEnabled = field.aspect !== undefined
+        && field.outputWidth !== undefined
+        && field.outputHeight !== undefined;
       return (
         <div className={styles.formField} key={field.key}>
           <label className={styles.formLabel}>
             {field.label}{field.required ? ' *' : ''}
           </label>
-          <div className={styles.imageBox}>
+          <div
+            className={`${styles.imageBox} ${cropEnabled ? styles.cropPreview : ''}`}
+            style={cropEnabled
+              ? { aspectRatio: `${field.outputWidth} / ${field.outputHeight}` }
+              : undefined}
+          >
             {image ? (
               <Image
                 src={image}
@@ -938,7 +1402,11 @@ export default function AdminDashboard() {
                 width={430}
                 height={170}
                 unoptimized
-                style={{ objectFit: draft.imageFit === 'cover' ? 'cover' : 'contain' }}
+                style={{
+                  objectFit: cropEnabled || draft.imageFit === 'cover' ? 'cover' : 'contain',
+                  width: '100%',
+                  height: '100%',
+                }}
               />
             ) : (
               'No image yet'
@@ -956,7 +1424,27 @@ export default function AdminDashboard() {
                 onChange={(event: ChangeEvent<HTMLInputElement>) => {
                   const file = event.target.files?.[0];
                   event.target.value = '';
-                  if (file) void handleImageUpload(section, field.key, file);
+                  if (!file) return;
+                  if (
+                    field.aspect !== undefined
+                    && field.outputWidth !== undefined
+                    && field.outputHeight !== undefined
+                  ) {
+                    if (cropObjectUrlRef.current) URL.revokeObjectURL(cropObjectUrlRef.current);
+                    const imageUrl = URL.createObjectURL(file);
+                    cropObjectUrlRef.current = imageUrl;
+                    setCropRequest({
+                      section,
+                      key: field.key,
+                      file,
+                      imageUrl,
+                      aspect: field.aspect,
+                      outputWidth: field.outputWidth,
+                      outputHeight: field.outputHeight,
+                    });
+                  } else {
+                    void handleImageUpload(section, field.key, file);
+                  }
                 }}
               />
             </label>
@@ -1019,6 +1507,35 @@ export default function AdminDashboard() {
       );
     }
 
+    if (field.type === 'link-reference') {
+      const target = draft.linkType === 'Category'
+        ? 'categories'
+        : draft.linkType === 'Subcategory' ? 'subcategories'
+          : draft.linkType === 'Product' ? 'products' : null;
+      const references = target ? data[target] : [];
+      const referenceOptions = [...references].sort((left, right) => (
+        recordName(left).localeCompare(recordName(right))
+      ));
+      return (
+        <div className={styles.formField} key={field.key}>
+          <label className={styles.formLabel} htmlFor={id}>{field.label}</label>
+          <select
+            id={id}
+            className={styles.dashboardSelect}
+            value={valueAsString}
+            onChange={(event) => setDraftValue(section, field.key, event.target.value)}
+          >
+            <option value="">Choose an item</option>
+            {referenceOptions.map((record) => (
+              <option key={record.id} value={record.id}>
+                {recordName(record)}{record.visible === false ? ' (hidden)' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+
     if (field.type === 'select') {
       return (
         <div className={styles.formField} key={field.key}>
@@ -1054,6 +1571,14 @@ export default function AdminDashboard() {
         const nextValue = field.type === 'number'
           ? event.target.value === '' ? '' : Number(event.target.value)
           : event.target.value;
+        if (field.key === 'name' && isSlugSection(section) && !editId && !slugManuallyEditedRef.current) {
+          setDraftValue(section, 'name', nextValue);
+          setDraftValue(section, 'slug', createSlug(String(nextValue)));
+          return;
+        }
+        if (field.key === 'slug' && isSlugSection(section) && !editId) {
+          slugManuallyEditedRef.current = true;
+        }
         setDraftValue(section, field.key, nextValue);
       },
     };
@@ -1063,6 +1588,7 @@ export default function AdminDashboard() {
         <label className={styles.formLabel} htmlFor={id}>
           {field.label}{field.required ? ' *' : ''}
         </label>
+        {field.helperText && <p className={styles.helperText}>{field.helperText}</p>}
         {field.type === 'textarea' ? (
           <textarea
             {...commonProps}
@@ -1086,11 +1612,11 @@ export default function AdminDashboard() {
   const contentSection = activeSection;
   const currentSectionConfig = adminSections[contentSection];
   const currentRows = data[contentSection];
-  const query = searchValues[contentSection].toLowerCase();
+  const searchQuery = searchValues[contentSection].toLowerCase();
   const titleField = currentSectionConfig.titleField;
 
   const visibleRows = currentRows
-    .filter((record) => String(record[titleField] ?? '').toLowerCase().includes(query))
+    .filter((record) => String(record[titleField] ?? '').toLowerCase().includes(searchQuery))
     .sort((left, right) => {
       const leftOrder = typeof left.order === 'number' ? left.order : Number.MAX_SAFE_INTEGER;
       const rightOrder = typeof right.order === 'number' ? right.order : Number.MAX_SAFE_INTEGER;
@@ -1145,7 +1671,7 @@ export default function AdminDashboard() {
 
   function renderRows() {
     if (visibleRows.length === 0) {
-      const searching = query.length > 0;
+      const searching = searchQuery.length > 0;
       if (contentSection === 'products' && !searching && data.products.length === 0) {
         return (
           <div className={styles.empty}>
@@ -1176,9 +1702,20 @@ export default function AdminDashboard() {
     }
 
     return visibleRows.map((record) => {
-      const title = String(record[currentSectionConfig.titleField] || 'Untitled');
+      const title = String(record[currentSectionConfig.titleField]
+        || (contentSection === 'heroSlides' ? 'Untitled slide' : 'Untitled'));
       const image = getImageUrl(record.image);
       const flag = record[currentSectionConfig.statusField] !== false;
+      const heroSlide = contentSection === 'heroSlides';
+      const heroLinkState = heroSlide ? getHeroSlideLinkState(record, data) : null;
+      const now = Date.now();
+      const scheduleLabel = heroSlide
+        ? typeof record.endAt === 'number' && record.endAt <= now
+          ? 'Expired'
+          : typeof record.startAt === 'number' && record.startAt > now
+            ? 'Scheduled'
+            : null
+        : null;
       const statusText = activeSection === 'subscribers'
         ? flag ? 'Subscribed' : 'Unsubscribed'
         : flag ? 'Visible' : 'Hidden';
@@ -1188,7 +1725,7 @@ export default function AdminDashboard() {
           key={record.id}
         >
           <button className={styles.itemOpen} type="button" onClick={() => openDrawer(record)}>
-            <div className={styles.thumbnail}>
+            <div className={`${styles.thumbnail} ${heroSlide ? styles.heroThumbnail : ''}`}>
               {image ? (
                 <Image
                   src={image}
@@ -1210,6 +1747,14 @@ export default function AdminDashboard() {
             </div>
           </button>
           <span className={`${styles.pill} ${flag ? styles.pillOn : ''}`}>{statusText}</span>
+          {heroLinkState?.warning && (
+            <span className={`${styles.pill} ${styles.warningPill}`}>
+              {heroLinkState.warningText}
+            </span>
+          )}
+          {scheduleLabel && (
+            <span className={styles.pill}>{scheduleLabel}</span>
+          )}
           <button
             className={`${styles.iconButton} ${styles.deleteButton}`}
             type="button"
@@ -1227,11 +1772,20 @@ export default function AdminDashboard() {
   }
 
   function renderFields(section: SectionKey, fields: FieldConfig[]) {
-    return fields.map((field) => renderField(
-      field,
-      section,
-      'key' in field ? draft[field.key] : undefined,
-    ));
+    return fields.flatMap((field) => {
+      if (
+        'key' in field
+        && field.showWhen
+        && (Array.isArray(field.showWhen.value)
+          ? !field.showWhen.value.includes(draft[field.showWhen.key])
+          : draft[field.showWhen.key] !== field.showWhen.value)
+      ) return [];
+      return [renderField(
+        field,
+        section,
+        'key' in field ? draft[field.key] : undefined,
+      )];
+    });
   }
 
   function renderDrawer() {
@@ -1300,6 +1854,38 @@ export default function AdminDashboard() {
             <p className={styles.hint}>{currentSectionConfig.hint}</p>
           </div>
           <div className={styles.buttonGroup}>
+            {contentSection === 'heroSlides' && (
+              <>
+                <label className={styles.heroInterval}>
+                  Slide duration (seconds)
+                  <input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={heroIntervalInput}
+                    onChange={(event) => setHeroIntervalInput(event.target.value)}
+                  />
+                </label>
+                <button
+                  className={styles.button}
+                  type="button"
+                  disabled={savingHeroInterval}
+                  onClick={() => void saveHeroInterval()}
+                >
+                  {savingHeroInterval ? 'Saving…' : 'Save duration'}
+                </button>
+              </>
+            )}
+            {isSlugSection(contentSection) && (
+              <button
+                className={styles.button}
+                type="button"
+                disabled={generatingSlugs}
+                onClick={() => void generateMissingSlugs(contentSection)}
+              >
+                {generatingSlugs ? 'Generating…' : 'Generate missing slugs'}
+              </button>
+            )}
             {'csv' in currentSectionConfig && currentSectionConfig.csv && (
               <button className={styles.button} type="button" onClick={exportSubscribers}>
                 <Icon name="download" size={16} />
@@ -1345,6 +1931,21 @@ export default function AdminDashboard() {
         <div className={styles.list}>{renderRows()}</div>
       </main>
       {renderDrawer()}
+      {cropRequest && (
+        <ImageCropper
+          file={cropRequest.file}
+          imageUrl={cropRequest.imageUrl}
+          aspectRatio={cropRequest.aspect}
+          outputWidth={cropRequest.outputWidth}
+          outputHeight={cropRequest.outputHeight}
+          onCancel={closeCropper}
+          onDone={handleCroppedImage}
+          onError={(error) => showToast(
+            error instanceof Error ? error.message : 'Could not crop or upload this image.',
+            true,
+          )}
+        />
+      )}
       {toast && (
         <div className={`${styles.toast} ${styles.toastVisible} ${toast.error ? styles.toastError : ''}`} role="status" aria-live="polite">
           {toast.message}

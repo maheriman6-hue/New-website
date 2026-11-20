@@ -162,11 +162,21 @@ export async function POST(request: Request) {
     return jsonError('Choose an image smaller than 5 MB.', 413);
   }
 
+  const requestedFolder = formData.get('folder');
+  if (
+    requestedFolder !== null
+    && requestedFolder !== 'catalog'
+    && requestedFolder !== 'hero'
+  ) {
+    return jsonError('Choose a supported image folder.', 400);
+  }
+  const folder = requestedFolder === 'hero' ? '/zateef/hero' : '/zateef/catalog';
+
   try {
     const uploaded = await imageKit.upload({
       file: Buffer.from(await file.arrayBuffer()),
       fileName: `${randomUUID()}.webp`,
-      folder: '/zateef/catalog',
+      folder,
       useUniqueFileName: true,
     });
     return Response.json({ url: uploaded.url, fileId: uploaded.fileId });

@@ -1,407 +1,558 @@
 'use client';
 
-import { getImageProps } from 'next/image';
 import {
-  memo,
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type CSSProperties,
-  type PointerEvent,
-} from 'react';
+  collection,
+  doc,
+  onSnapshot,
+  query,
+  where,
+  type DocumentData,
+  type QuerySnapshot,
+} from 'firebase/firestore';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, PointerEvent } from 'react';
+import { db } from '@/lib/firebase';
 
-type Slide = {
-  title: string;
-  client: string;
-  category: string;
+type HeroLinkType = 'None' | 'Category' | 'Subcategory' | 'Product' | 'Custom URL';
+
+export interface HeroSlide {
+  id: string;
   image?: string;
-  mobileImage?: string;
-  imageSizes?: string;
-  alt?: string;
-  imagePosition?: CSSProperties['objectPosition'];
+  imageDesktop?: string;
+  alt: string;
+  title?: string;
+  subtitle?: string;
+  buttonText?: string;
+  linkType: HeroLinkType;
+  linkId?: string;
+  customUrl?: string;
+  order?: number;
+  visible?: boolean;
+  startAt?: number;
+  endAt?: number;
+  imagePosition?: string;
   strongBottomShade?: boolean;
+  isBrandIntro?: boolean;
+  useMobileImage?: boolean;
+  useDesktopImage?: boolean;
+}
+
+interface LinkTarget {
+  id: string;
+  slug?: string;
+  visible?: boolean;
+  categoryId?: string;
+  subcategoryId?: string;
+}
+
+type LinkTargets = {
+  categories: LinkTarget[];
+  subcategories: LinkTarget[];
+  products: LinkTarget[];
 };
 
-const slides: Slide[] = [
+type ResolvedLink = { url: string; external: boolean } | null;
+type TargetCollection = keyof LinkTargets;
+
+const EMPTY_TARGETS: LinkTargets = {
+  categories: [],
+  subcategories: [],
+  products: [],
+};
+
+const BRAND_INTRO_SLIDE: HeroSlide = {
+  id: 'brand-intro',
+  image: '',
+  alt: '',
+  title: 'ZATEEF International',
+  linkType: 'None',
+  isBrandIntro: true,
+};
+
+const DEFAULT_HERO_SLIDES: HeroSlide[] = [
   {
-    title: 'ZATEEF International',
-    client: 'SPORTSWEAR & STREETWEAR MANUFACTURER',
-    category: '[SIALKOT] — [PAKISTAN]',
-  },
-  {
-    title: 'Built to Move',
-    client: 'SPORTSWEAR',
-    category: 'PERFORMANCE FABRICS — 2026',
-    image: '/media/sportswear-hero.jpg',
-    mobileImage: '/media/mobile/sportswear-m.jpg',
-    imageSizes: 'max(100vw, 227vh)',
+    id: 'legacy-built-to-move',
+    image: '/media/mobile/sportswear-m.jpg',
+    imageDesktop: '/media/sportswear-hero.jpg',
     alt: 'Man and woman wearing black performance sportswear',
+    title: 'Built to Move',
+    subtitle: 'SPORTSWEAR · PERFORMANCE FABRICS — 2026',
+    linkType: 'None',
+    order: 1,
+    visible: true,
+    useMobileImage: true,
+    useDesktopImage: true,
   },
   {
-    title: 'Street Ready',
-    client: 'STREETWEAR',
-    category: 'HOODIES & CARGOS — 2026',
-    image: '/media/streetwear-hero.jpg',
-    mobileImage: '/media/mobile/streetwear-m.jpg',
-    imageSizes: 'max(100vw, 227vh)',
+    id: 'legacy-street-ready',
+    image: '/media/mobile/streetwear-m.jpg',
+    imageDesktop: '/media/streetwear-hero.jpg',
     alt: 'Man in a black hoodie and cargo pants against a concrete wall',
+    title: 'Street Ready',
+    subtitle: 'STREETWEAR · HOODIES & CARGOS — 2026',
+    linkType: 'None',
+    order: 2,
+    visible: true,
+    useMobileImage: true,
+    useDesktopImage: true,
   },
   {
-    title: 'Stitch by Stitch',
-    client: 'IN-HOUSE PRODUCTION',
-    category: 'SAMPLE TO BULK',
-    image: '/media/stiching.webp',
-    mobileImage: '/media/mobile/stitching-m.jpg',
-    imageSizes: 'max(100vw, 178vh)',
+    id: 'legacy-stitch-by-stitch',
+    image: '/media/mobile/stitching-m.jpg',
+    imageDesktop: '/media/stiching.webp',
     alt: 'Close-up of hands stitching black sportswear fabric on an industrial sewing machine',
+    title: 'Stitch by Stitch',
+    subtitle: 'IN-HOUSE PRODUCTION · SAMPLE TO BULK',
+    linkType: 'None',
+    order: 3,
+    visible: true,
+    useMobileImage: true,
+    useDesktopImage: true,
   },
   {
-    title: 'Ready to Ship',
-    client: 'PACKING',
-    category: 'GLOBAL DELIVERY — 2026',
-    image: '/media/zateef-delivery.webp',
-    mobileImage: '/media/mobile/delivery-m.jpg',
-    imageSizes: 'max(100vw, 178vh)',
+    id: 'legacy-ready-to-ship',
+    image: '/media/mobile/delivery-m.jpg',
+    imageDesktop: '/media/zateef-delivery.webp',
     alt: 'Black Zateef International shipping boxes, an open box with a packed black hoodie, a checklist and a thank-you card on a wooden table',
+    title: 'Ready to Ship',
+    subtitle: 'PACKING · GLOBAL DELIVERY — 2026',
+    linkType: 'None',
+    order: 4,
+    visible: true,
     imagePosition: '58% 0%',
     strongBottomShade: true,
+    useMobileImage: true,
+    useDesktopImage: true,
   },
 ];
 
-const CAPTION_LEAD = 250;
-const STRIP_DURATION = 700;
-const STRIP_SPAN = 1150;
-const SLIDE_DURATION = 2000;
-const INTRO_DURATION = SLIDE_DURATION;
-const TOTAL_STRIPS = 10;
-const LITE_STRIPS = 6;
-const IMAGE_PRELOAD_ATTEMPTS = 3;
-const MOBILE_PORTRAIT_QUERY = '(max-width: 767px) and (orientation: portrait)';
+function readText(data: DocumentData, key: string): string | undefined {
+  const value = data[key];
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
 
-const introProgressStyle = { '--progress-duration': `${INTRO_DURATION}ms` } as CSSProperties;
-const slideProgressStyle = { '--progress-duration': `${SLIDE_DURATION}ms` } as CSSProperties;
-const preloadedImages = new Map<string, Promise<void>>();
-const MASK_STRIP_INDICES = {
-  10: Array.from({ length: TOTAL_STRIPS }, (_, index) => index),
-  6: Array.from({ length: LITE_STRIPS }, (_, index) => index),
-} satisfies Record<6 | 10, number[]>;
+function readTimestamp(data: DocumentData, key: string): number | undefined {
+  const value = data[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function parseHeroSlide(id: string, value: DocumentData): HeroSlide | null {
+  const image = readText(value, 'image');
+  const imageDesktop = readText(value, 'imageDesktop');
+  const useMobileImage = typeof value.useMobileImage === 'boolean'
+    ? value.useMobileImage
+    : Boolean(image);
+  const useDesktopImage = typeof value.useDesktopImage === 'boolean'
+    ? value.useDesktopImage
+    : Boolean(imageDesktop);
+  if ((!useMobileImage || !image) && (!useDesktopImage || !imageDesktop)) return null;
+
+  const acceptedLinkTypes: HeroLinkType[] = [
+    'None',
+    'Category',
+    'Subcategory',
+    'Product',
+    'Custom URL',
+  ];
+  const rawLinkType = value.linkType;
+  const linkType = acceptedLinkTypes.find((candidate) => candidate === rawLinkType) ?? 'None';
+  const order = readTimestamp(value, 'order');
+
+  return {
+    id,
+    image,
+    imageDesktop,
+    alt: readText(value, 'alt') ?? '',
+    title: readText(value, 'title'),
+    subtitle: readText(value, 'subtitle'),
+    buttonText: readText(value, 'buttonText'),
+    linkType,
+    linkId: readText(value, 'linkId'),
+    customUrl: readText(value, 'customUrl'),
+    order,
+    visible: typeof value.visible === 'boolean' ? value.visible : undefined,
+    startAt: readTimestamp(value, 'startAt'),
+    endAt: readTimestamp(value, 'endAt'),
+    imagePosition: readText(value, 'imagePosition'),
+    strongBottomShade: typeof value.strongBottomShade === 'boolean'
+      ? value.strongBottomShade
+      : undefined,
+    useMobileImage,
+    useDesktopImage,
+  };
+}
+
+function readLinkTargets(snapshot: QuerySnapshot<DocumentData>): LinkTarget[] {
+  return snapshot.docs.map((document) => {
+    const data = document.data();
+    return {
+      id: document.id,
+      slug: readText(data, 'slug'),
+      visible: typeof data.visible === 'boolean' ? data.visible : undefined,
+      categoryId: readText(data, 'categoryId'),
+      subcategoryId: readText(data, 'subcategoryId'),
+    };
+  });
+}
+
+function resolveSlideLink(slide: HeroSlide, targets: LinkTargets): ResolvedLink {
+  if (slide.linkType === 'Custom URL') {
+    const url = slide.customUrl?.trim();
+    if (!url || url.startsWith('//')) return null;
+    if (/^https:\/\//i.test(url)) {
+      try {
+        const externalUrl = new URL(url);
+        if (externalUrl.protocol !== 'https:') return null;
+        return {
+          url: externalUrl.href,
+          external: typeof window !== 'undefined' && externalUrl.origin !== window.location.origin,
+        };
+      } catch {
+        return null;
+      }
+    }
+    return /^[a-z][a-z0-9+.-]*:/i.test(url) ? null : { url, external: false };
+  }
+
+  const targetCollection: Partial<Record<HeroLinkType, TargetCollection>> = {
+    Category: 'categories',
+    Subcategory: 'subcategories',
+    Product: 'products',
+  };
+  const collectionName = targetCollection[slide.linkType];
+  if (!collectionName || !slide.linkId) return null;
+  const target = targets[collectionName].find((item) => item.id === slide.linkId);
+  if (!target || target.visible === false) return null;
+  if (collectionName === 'products') {
+    const category = target.categoryId
+      ? targets.categories.find((item) => item.id === target.categoryId)
+      : undefined;
+    if (!category || category.visible === false) return null;
+    if (target.subcategoryId) {
+      const subcategory = targets.subcategories.find((item) => (
+        item.id === target.subcategoryId && item.categoryId === target.categoryId
+      ));
+      if (!subcategory || subcategory.visible === false) return null;
+    } else if (targets.subcategories.some((item) => item.categoryId === target.categoryId)) {
+      return null;
+    }
+  }
+
+  const parameter = collectionName === 'categories'
+    ? 'category'
+    : collectionName === 'subcategories' ? 'subcategory' : 'product';
+  return {
+    url: `/work?${parameter}=${encodeURIComponent(target.slug || target.id)}`,
+    external: false,
+  };
+}
 
 function formatSlideNumber(index: number) {
-  return String(index).padStart(2, '0');
+  return String(index + 1).padStart(2, '0');
 }
 
-function formatAnimationDelay(index: number, count: 6 | 10) {
-  return `${((STRIP_SPAN - STRIP_DURATION) / (count - 1)) * index}ms`;
-}
-
-function getDesktopImageProps(slide: Slide) {
-  if (!slide.image) return null;
-
-  return getImageProps({
-    src: slide.image,
-    alt: slide.alt ?? '',
-    fill: true,
-    sizes: slide.imageSizes ?? '100vw',
-    quality: 90,
-  }).props;
-}
-
-async function loadImage(slide: Slide, attempt = 1): Promise<void> {
-  const isMobilePortrait = window.matchMedia(MOBILE_PORTRAIT_QUERY).matches;
-  const imageProps = getDesktopImageProps(slide);
-  const src = isMobilePortrait && slide.mobileImage
-    ? slide.mobileImage
-    : imageProps?.src;
-  if (!src || !imageProps) return;
-
-  try {
-    await new Promise<HTMLImageElement>((resolve, reject) => {
-      const preloadedImage = new window.Image();
-      preloadedImage.decoding = 'async';
-      preloadedImage.onload = () => {
-        void preloadedImage.decode().then(() => resolve(preloadedImage), reject);
-      };
-      preloadedImage.onerror = () => reject(new Error(`Could not load hero image: ${src}`));
-      if (isMobilePortrait) {
-        preloadedImage.src = src;
-      } else {
-        preloadedImage.sizes = imageProps.sizes ?? '100vw';
-        if (imageProps.srcSet) preloadedImage.srcset = imageProps.srcSet;
-        preloadedImage.src = src;
-      }
-    });
-  } catch (error) {
-    if (attempt >= IMAGE_PRELOAD_ATTEMPTS) {
-      throw new Error(`Could not preload hero image after ${attempt} attempts: ${src}`, { cause: error });
-    }
-
-    await new Promise<void>((resolve) => {
-      window.setTimeout(resolve, attempt * 300);
-    });
-    return loadImage(slide, attempt + 1);
-  }
-}
-
-function preloadImage(slide: Slide) {
-  if (!slide.image) return Promise.resolve();
-
-  const cacheKey = [
-    slide.image,
-    window.matchMedia(MOBILE_PORTRAIT_QUERY).matches ? 'mobile' : 'desktop',
-    `${window.innerWidth}x${window.innerHeight}@${window.devicePixelRatio}`,
-  ].join('|');
-  const cached = preloadedImages.get(cacheKey);
-  if (cached) return cached;
-
-  const request = loadImage(slide);
-
-  preloadedImages.set(cacheKey, request);
-  request.catch(() => preloadedImages.delete(cacheKey));
-  return request;
-}
-
-const SlideMedia = memo(function SlideMedia({
-  slide,
-  priority = false,
-}: {
-  slide: Slide;
-  priority?: boolean;
-}) {
-  if (slide.image) {
-    const imageProps = getDesktopImageProps(slide);
-    if (!imageProps) return null;
-
+function SlideImage({ slide, priority }: { slide: HeroSlide; priority: boolean }) {
+  if (slide.isBrandIntro) {
     return (
-      <div className="home-hero__slide-media">
-        <picture className="home-hero__picture">
-          {slide.mobileImage && (
-            <source
-              media={MOBILE_PORTRAIT_QUERY}
-              srcSet={slide.mobileImage}
-              sizes="100vw"
-            />
-          )}
-          <img
-            {...imageProps}
-            className="home-hero__image"
-            alt={slide.alt ?? ''}
-            loading={priority ? 'eager' : 'lazy'}
-            decoding="async"
-            style={{
-              ...imageProps.style,
-              '--hero-image-position': slide.imagePosition ?? 'center',
-            } as CSSProperties}
-          />
-        </picture>
-        <div className={['home-hero__media-shade', slide.strongBottomShade ? 'home-hero__media-shade--strong-bottom' : ''].join(' ')} />
+      <div className="home-hero__intro" aria-hidden="true">
+        <div className="home-hero__intro-name">Zateef</div>
+        <div className="home-hero__intro-wordmark">International</div>
       </div>
     );
   }
 
+  const mobileImage = slide.useMobileImage === false ? undefined : slide.image;
+  const desktopImage = slide.useDesktopImage === false ? undefined : slide.imageDesktop;
+
   return (
-    <div className="home-hero__intro" aria-hidden="true">
-      <div className="home-hero__intro-name">Zateef</div>
-      <div className="home-hero__intro-wordmark">International</div>
-    </div>
+    <picture className="home-hero__picture">
+      {desktopImage && (
+        <source media="(min-width: 768px)" srcSet={desktopImage} />
+      )}
+      {/* Native img keeps data URLs usable without the Next image optimizer. */}
+      <img
+        className="home-hero__image"
+        src={mobileImage ?? desktopImage ?? ''}
+        alt={slide.alt}
+        loading={priority ? 'eager' : 'lazy'}
+        fetchPriority={priority ? 'high' : 'auto'}
+        decoding="async"
+        style={{ '--hero-image-position': slide.imagePosition ?? 'center' } as CSSProperties}
+      />
+    </picture>
   );
-});
+}
 
 export function HomeHeroSlider() {
   const maskId = `hero-strip-mask-${useId().replaceAll(':', '')}`;
-  const stageRef = useRef<HTMLElement | null>(null);
-  const timerRef = useRef<number | null>(null);
-  const pointerStartRef = useRef<number | null>(null);
-  const isTransitioningRef = useRef(false);
-  const activeIndexRef = useRef(0);
-  const moveToRef = useRef<(index: number) => Promise<void>>(async () => {});
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [settledIndex, setSettledIndex] = useState(0);
-  const [transitionIndex, setTransitionIndex] = useState<number | null>(null);
-  const [transitionStripCount, setTransitionStripCount] = useState<6 | 10>(TOTAL_STRIPS);
-  const [isAutoplayRunning, setIsAutoplayRunning] = useState(false);
-  const [progressRun, setProgressRun] = useState(0);
+  const [allSlides, setAllSlides] = useState<HeroSlide[]>(DEFAULT_HERO_SLIDES);
+  const [targets, setTargets] = useState<LinkTargets>(EMPTY_TARGETS);
+  const [intervalSeconds, setIntervalSeconds] = useState(3);
+  const [activeSlideId, setActiveSlideId] = useState<string | null>(null);
+  const [settledSlideId, setSettledSlideId] = useState<string | null>(null);
+  const [transitionSlideId, setTransitionSlideId] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [isPaused, setIsPaused] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+    () => typeof window !== 'undefined'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const transitionTimerRef = useRef<number | null>(null);
+  const selectSlideRef = useRef<(index: number) => void>(() => {});
 
-  const clearTimer = useCallback(() => {
-    if (timerRef.current !== null) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
+  useEffect(() => {
+    const unsubscribers = [
+      onSnapshot(collection(db, 'heroSlides'), (snapshot) => {
+        setAllSlides(snapshot.docs.flatMap((document) => {
+          const slide = parseHeroSlide(document.id, document.data());
+          return slide ? [slide] : [];
+        }));
+      }, (error) => {
+        console.error('Could not load the homepage hero slides.', error);
+      }),
+      onSnapshot(doc(db, 'settings', 'site'), (snapshot) => {
+        const interval = snapshot.data()?.heroInterval;
+        if (typeof interval === 'number' && Number.isFinite(interval) && interval > 0) {
+          setIntervalSeconds(interval);
+        } else {
+          setIntervalSeconds(3);
+        }
+      }, (error) => {
+        console.error('Could not load the homepage slideshow duration.', error);
+      }),
+      ...(['categories', 'subcategories', 'products'] as const).map((collectionName) => (
+        onSnapshot(query(
+          collection(db, collectionName),
+          where('visible', '==', true),
+        ), (snapshot) => {
+          const items = readLinkTargets(snapshot);
+          setTargets((current) => ({ ...current, [collectionName]: items }));
+        }, (error) => {
+          console.error(`Could not resolve hero slide ${collectionName} links.`, error);
+        })
+      )),
+    ];
+
+    return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
   }, []);
 
-  const updateTransitionState = useCallback((isActive: boolean) => {
-    if (isActive) {
-      document.documentElement.dataset.heroTransition = 'true';
-      document.dispatchEvent(new Event('hero:transition-start'));
-    } else {
-      delete document.documentElement.dataset.heroTransition;
-    }
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+    mediaQuery.addEventListener('change', updatePreference);
+    return () => mediaQuery.removeEventListener('change', updatePreference);
   }, []);
 
-  const moveTo = useCallback(async (nextIndex: number) => {
-    if (isTransitioningRef.current || nextIndex === activeIndexRef.current) return;
+  useEffect(() => () => {
+    if (transitionTimerRef.current !== null) window.clearTimeout(transitionTimerRef.current);
+  }, []);
 
-    clearTimer();
-    isTransitioningRef.current = true;
-    setIsAutoplayRunning(false);
-    updateTransitionState(true);
+  const slides = useMemo(() => {
+    const configuredSlides = allSlides
+      .filter((slide) => (
+        slide.visible !== false
+        && (slide.startAt === undefined || slide.startAt <= now)
+        && (slide.endAt === undefined || slide.endAt > now)
+      ))
+      .sort((left, right) => (
+        (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER)
+        || left.id.localeCompare(right.id)
+      ));
+    return configuredSlides.length > 0
+        ? [BRAND_INTRO_SLIDE, ...configuredSlides]
+      : [];
+  }, [allSlides, now]);
+  const activeSlidePosition = slides.findIndex((slide) => slide.id === activeSlideId);
+  const activeSlideIndex = activeSlidePosition >= 0 ? activeSlidePosition : 0;
+  const activeSlide = slides[activeSlideIndex] ?? null;
+  const settledSlide = slides.find((slide) => slide.id === settledSlideId) ?? activeSlide;
+  const transitionSlide = slides.find((slide) => slide.id === transitionSlideId) ?? null;
 
-    try {
-      await preloadImage(slides[nextIndex]);
-    } catch (error) {
-      console.error('Hero slide transition was cancelled because its image could not be decoded.', error);
-      isTransitioningRef.current = false;
-      updateTransitionState(false);
+  useEffect(() => {
+    const boundaries = allSlides.flatMap((slide) => [
+      slide.startAt,
+      slide.endAt,
+    ]).filter((timestamp): timestamp is number => (
+      typeof timestamp === 'number' && timestamp > Date.now()
+    ));
+    if (boundaries.length === 0) return;
+    const timer = window.setTimeout(
+      () => setNow(Date.now()),
+      Math.max(50, Math.min(...boundaries) - Date.now() + 50),
+    );
+    return () => window.clearTimeout(timer);
+  }, [allSlides, now]);
+
+  const selectSlide = useCallback((requestedIndex: number) => {
+    if (slides.length === 0) return;
+    const nextIndex = (requestedIndex + slides.length) % slides.length;
+    const currentSlide = slides[activeSlideIndex];
+    const nextSlide = slides[nextIndex];
+    if (transitionTimerRef.current !== null) {
+      window.clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
+    }
+
+    setActiveSlideId(nextSlide.id);
+    if (!currentSlide || currentSlide.id === nextSlide.id || prefersReducedMotion) {
+      setSettledSlideId(nextSlide.id);
+      setTransitionSlideId(null);
       return;
     }
 
-    activeIndexRef.current = nextIndex;
-    setActiveIndex(nextIndex);
-    const count: 6 | 10 = document.documentElement.dataset.perf === 'lite' ? LITE_STRIPS : TOTAL_STRIPS;
-    setTransitionStripCount(count);
-
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reducedMotion) {
-      setSettledIndex(nextIndex);
-      isTransitioningRef.current = false;
-      updateTransitionState(false);
-      const followingIndex = (nextIndex + 1) % slides.length;
-      setProgressRun((run) => run + 1);
-      setIsAutoplayRunning(true);
-      timerRef.current = window.setTimeout(() => {
-        void moveToRef.current(followingIndex);
-      }, nextIndex === 0 ? INTRO_DURATION : SLIDE_DURATION);
-    } else {
-      timerRef.current = window.setTimeout(() => {
-        setTransitionIndex(nextIndex);
-        timerRef.current = window.setTimeout(() => {
-          setSettledIndex(nextIndex);
-          setTransitionIndex(null);
-          isTransitioningRef.current = false;
-          updateTransitionState(false);
-          timerRef.current = null;
-
-          const followingIndex = (nextIndex + 1) % slides.length;
-          void preloadImage(slides[followingIndex]).catch((error: unknown) => {
-            console.error('Could not preload the next hero image.', error);
-          });
-
-          setProgressRun((run) => run + 1);
-          setIsAutoplayRunning(true);
-          timerRef.current = window.setTimeout(() => {
-            void moveToRef.current(followingIndex);
-          }, nextIndex === 0 ? INTRO_DURATION : SLIDE_DURATION);
-        }, STRIP_SPAN);
-      }, CAPTION_LEAD);
-      return;
-    }
-
-    const followingIndex = (nextIndex + 1) % slides.length;
-    void preloadImage(slides[followingIndex]).catch((error: unknown) => {
-      console.error('Could not preload the next hero image.', error);
-    });
-  }, [clearTimer, updateTransitionState]);
-  useEffect(() => {
-    moveToRef.current = moveTo;
-  }, [moveTo]);
+    setSettledSlideId(currentSlide.id);
+    setTransitionSlideId(nextSlide.id);
+    transitionTimerRef.current = window.setTimeout(() => {
+      setSettledSlideId(nextSlide.id);
+      setTransitionSlideId(null);
+      transitionTimerRef.current = null;
+    }, 1400);
+  }, [activeSlideIndex, prefersReducedMotion, slides]);
 
   useEffect(() => {
-    const stage = stageRef.current;
-    if (!stage) return;
-
-    const resizeObserver = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      stage.style.setProperty('--stage-w', `${width}px`);
-      stage.style.setProperty('--stage-h', `${height}px`);
-    });
-
-    resizeObserver.observe(stage);
-    return () => resizeObserver.disconnect();
-  }, []);
+    selectSlideRef.current = selectSlide;
+  }, [selectSlide]);
 
   useEffect(() => {
-    let cancelled = false;
-    void preloadImage(slides[1]).then(() => {
-      if (cancelled) return;
-      setIsAutoplayRunning(true);
-      setProgressRun((run) => run + 1);
-      timerRef.current = window.setTimeout(() => {
-        void moveTo(1);
-      }, INTRO_DURATION);
-    }).catch((error: unknown) => {
-      console.error('Could not preload the first hero image.', error);
-    });
+    if (slides.length < 2) return;
+    const nextSlide = slides[(activeSlideIndex + 1) % slides.length];
+    if (!nextSlide || nextSlide.isBrandIntro) return;
 
-    const idlePreloadTimer = window.setTimeout(() => {
-      if (cancelled) return;
-      void Promise.all(slides.slice(2).map((slide) => preloadImage(slide))).catch((error: unknown) => {
-        console.error('Could not preload all hero slides.', error);
-      });
-    }, 250);
+    const desktopImage = nextSlide.useDesktopImage === false
+      ? undefined
+      : nextSlide.imageDesktop;
+    const mobileImage = nextSlide.useMobileImage === false
+      ? undefined
+      : nextSlide.image;
+    const source = window.matchMedia('(min-width: 768px)').matches
+      ? desktopImage ?? mobileImage
+      : mobileImage ?? desktopImage;
+    if (!source) return;
 
-    return () => {
-      cancelled = true;
-      window.clearTimeout(idlePreloadTimer);
-      clearTimer();
-      updateTransitionState(false);
+    const preload = new window.Image();
+    preload.decoding = 'async';
+    preload.fetchPriority = 'high';
+    preload.onerror = () => {
+      console.error(`Could not preload the next homepage hero image: ${source}`);
     };
-  }, [clearTimer, moveTo, updateTransitionState]);
+    preload.src = source;
+  }, [activeSlideIndex, slides]);
 
-  const activeSlide = slides[activeIndex];
-  const settledSlide = slides[settledIndex];
-  const isIntro = activeIndex === 0;
-  const incomingSlide = transitionIndex === null ? null : slides[transitionIndex];
+  useEffect(() => {
+    if (
+      slides.length < 2
+      || isPaused
+      || prefersReducedMotion
+      || transitionSlideId !== null
+    ) return;
+    const timer = window.setTimeout(() => {
+      selectSlideRef.current(activeSlideIndex + 1);
+    }, intervalSeconds * 1000);
+    return () => window.clearTimeout(timer);
+  }, [
+    activeSlideIndex,
+    intervalSeconds,
+    isPaused,
+    prefersReducedMotion,
+    slides.length,
+    transitionSlideId,
+  ]);
 
-  const onPointerDown = (event: PointerEvent<HTMLElement>) => {
-    pointerStartRef.current = event.clientX;
-  };
+  const moveBy = useCallback((direction: -1 | 1) => {
+    selectSlide((activeSlideIndex + direction + slides.length) % slides.length);
+  }, [activeSlideIndex, selectSlide, slides.length]);
 
-  const onPointerUp = (event: PointerEvent<HTMLElement>) => {
-    if (pointerStartRef.current === null) return;
-    const delta = event.clientX - pointerStartRef.current;
+  function onPointerDown(event: PointerEvent<HTMLElement>) {
+    if (event.pointerType !== 'touch' || !event.isPrimary) return;
+    if (event.target instanceof Element && event.target.closest('button')) return;
+    pointerStartRef.current = { x: event.clientX, y: event.clientY };
+  }
+
+  function onPointerUp(event: PointerEvent<HTMLElement>) {
+    const start = pointerStartRef.current;
     pointerStartRef.current = null;
-    if (Math.abs(delta) < 48) return;
-    const direction = delta < 0 ? 1 : -1;
-    void moveTo((activeIndexRef.current + direction + slides.length) % slides.length);
-  };
+    if (event.pointerType !== 'touch' || !start) return;
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+    event.preventDefault();
+    moveBy(deltaX < 0 ? 1 : -1);
+  }
+
+  if (slides.length === 0 || !activeSlide) return null;
+  const activeLink = resolveSlideLink(activeSlide, targets);
+  const settledLink = settledSlide ? resolveSlideLink(settledSlide, targets) : null;
+  const progressStyle = { '--progress-duration': `${intervalSeconds * 1000}ms` } as CSSProperties;
+  const isBrandIntro = activeSlide.isBrandIntro === true;
 
   return (
     <section
-      ref={stageRef}
-      className={['home-hero relative overflow-hidden bg-[#0a0a0a] text-[#f2eee6]', isIntro ? 'is-intro' : ''].join(' ')}
-      aria-label="Featured work"
+      className={`home-hero relative overflow-hidden bg-[#0a0a0a] text-[#f2eee6] ${isBrandIntro ? 'is-intro' : ''} ${transitionSlide ? 'is-transitioning' : ''}`}
+      aria-label="Homepage slideshow"
+      aria-roledescription="carousel"
+      onFocusCapture={() => setIsPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setIsPaused(false);
+        }
+      }}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerCancel={() => { pointerStartRef.current = null; }}
     >
-      <div className={['home-hero__scene', settledSlide.image ? '' : 'is-intro'].join(' ')}>
-        <SlideMedia slide={settledSlide} priority={settledIndex === 1} />
+      <div className={`home-hero__scene ${settledSlide?.isBrandIntro ? 'is-intro' : ''}`}>
+        {settledSlide && settledLink ? (
+          <a
+            className="home-hero__media-link"
+            href={settledLink.url}
+            target={settledLink.external ? '_blank' : undefined}
+            rel={settledLink.external ? 'noopener noreferrer' : undefined}
+            aria-label={settledSlide.title || settledSlide.alt || 'Open featured content'}
+          >
+            <div className="home-hero__slide-media">
+              <SlideImage
+                slide={settledSlide}
+                priority={!settledSlide.isBrandIntro && activeSlideIndex === 0}
+              />
+            </div>
+          </a>
+        ) : (
+          settledSlide && (
+            <div className="home-hero__slide-media">
+              <SlideImage
+                slide={settledSlide}
+                priority={!settledSlide.isBrandIntro && activeSlideIndex === 0}
+              />
+            </div>
+          )
+        )}
+        <div className={`home-hero__media-shade ${settledSlide?.strongBottomShade ? 'home-hero__media-shade--strong-bottom' : ''}`} />
       </div>
 
-      {incomingSlide && (
+      {transitionSlide && !prefersReducedMotion && (
         <>
           <svg className="home-hero__mask-defs" aria-hidden="true" focusable="false">
             <defs>
               <mask id={maskId} x="0" y="0" width="1" height="1" maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox">
                 <rect width="1" height="1" fill="black" />
-                {MASK_STRIP_INDICES[transitionStripCount].map((index) => (
+                {Array.from({ length: 10 }, (_, index) => (
                   <rect
                     key={index}
                     className="home-hero__wipe-rect"
-                    x={index / transitionStripCount}
+                    x={index / 10}
                     y="0"
-                    width={1 / transitionStripCount}
+                    width={1 / 10}
                     height="1"
                     fill="white"
-                    style={{ animationDelay: formatAnimationDelay(index, transitionStripCount) }}
+                    style={{ animationDelay: `${(450 / 9) * index}ms` }}
                   />
                 ))}
               </mask>
             </defs>
           </svg>
           <div
-            key={transitionIndex}
+            key={transitionSlide.id}
             className="home-hero__incoming-media"
             style={{
               maskImage: `url(#${maskId})`,
@@ -409,12 +560,15 @@ export function HomeHeroSlider() {
             }}
             aria-hidden="true"
           >
-            <SlideMedia slide={incomingSlide} priority />
+            <div className="home-hero__slide-media">
+              <SlideImage slide={transitionSlide} priority />
+              <div className={`home-hero__media-shade ${transitionSlide.strongBottomShade ? 'home-hero__media-shade--strong-bottom' : ''}`} />
+            </div>
           </div>
         </>
       )}
 
-      {isIntro && (
+      {isBrandIntro && (
         <div className="home-hero__intro-meta" aria-hidden="true">
           <p>
             SPORTSWEAR &amp;
@@ -436,33 +590,40 @@ export function HomeHeroSlider() {
       <div className="home-hero__caption">
         <div className="home-hero__caption-copy">
           <span className="home-hero__counter" aria-live="polite">
-            {formatSlideNumber(activeIndex)} <span>/ 05</span>
+            {isBrandIntro ? '00' : formatSlideNumber(activeSlideIndex)} <span>/ {String(slides.length).padStart(2, '0')}</span>
           </span>
-          <span className={['home-hero__title', isIntro ? 'is-intro-title' : ''].join(' ')}>
-            {activeSlide.title}
-          </span>
-          {!isIntro && (
-            <span className="home-hero__credit">
-              {activeSlide.client} — {activeSlide.category}
-            </span>
+          {activeSlide.title && (
+            <span className={`home-hero__title ${isBrandIntro ? 'is-intro-title' : ''}`}>{activeSlide.title}</span>
           )}
-          {isIntro && <span className="home-hero__drag-hint">DRAG OR SWIPE TO TURN</span>}
+          {activeSlide.subtitle && (
+            <span className="home-hero__credit">{activeSlide.subtitle}</span>
+          )}
+          {activeSlide.buttonText && activeLink && (
+            <a
+              className="home-hero__cta"
+              href={activeLink.url}
+              target={activeLink.external ? '_blank' : undefined}
+              rel={activeLink.external ? 'noopener noreferrer' : undefined}
+            >
+              {activeSlide.buttonText}
+            </a>
+          )}
         </div>
 
         <div className="home-hero__progress" role="group" aria-label="Choose featured slide">
           {slides.map((slide, index) => (
             <button
-              key={slide.title}
+              key={slide.id}
               type="button"
-              className={['home-hero__progress-button', index === activeIndex ? 'is-active' : ''].join(' ')}
-              aria-label={`Show slide ${formatSlideNumber(index)}: ${slide.title}`}
-              aria-current={index === activeIndex ? 'true' : undefined}
-              onClick={() => { void moveTo(index); }}
+              className={`home-hero__progress-button ${index === activeSlideIndex ? 'is-active' : ''}`}
+              aria-label={`Show slide ${formatSlideNumber(index)}${slide.title ? `: ${slide.title}` : ''}`}
+              aria-current={index === activeSlideIndex ? 'true' : undefined}
+              onClick={() => selectSlide(index)}
             >
               <span
-                key={`${activeIndex}-${progressRun}`}
-                className={index === activeIndex && isAutoplayRunning ? 'is-running' : ''}
-                style={index === 0 ? introProgressStyle : slideProgressStyle}
+                key={`${activeSlideIndex}-${isPaused}-${prefersReducedMotion}`}
+                className={index === activeSlideIndex && !isPaused && !prefersReducedMotion ? 'is-running' : ''}
+                style={progressStyle}
               />
             </button>
           ))}

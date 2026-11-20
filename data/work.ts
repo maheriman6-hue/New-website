@@ -29,6 +29,7 @@ export type WorkSpec = {
 
 export type WorkItem = {
   slug: string;
+  productId?: string;
   title: string;
   category: WorkCategory;
   categoryId?: string;

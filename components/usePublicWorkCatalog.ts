@@ -15,12 +15,16 @@ import { workItems, type WorkItem } from '@/data/work';
 export type PublicCategory = {
   id: string;
   name: string;
+  slug?: string;
+  visible?: boolean;
   order?: number;
 };
 
 export type PublicSubcategory = {
   id: string;
   name: string;
+  slug?: string;
+  visible?: boolean;
   categoryId: string;
   order?: number;
 };
@@ -28,6 +32,8 @@ export type PublicSubcategory = {
 export type PublicProduct = {
   id: string;
   name: string;
+  slug?: string;
+  visible?: boolean;
   image: string;
   categoryId: string;
   subcategoryId?: string;
@@ -80,11 +86,14 @@ function readBoolean(data: Record<string, unknown>, key: string): boolean | unde
 function readCategories(snapshot: QuerySnapshot<DocumentData>): PublicCategory[] {
   return snapshot.docs.flatMap((document) => {
     const data: Record<string, unknown> = document.data();
+    if (data.visible === false) return [];
     const name = readText(data, 'name');
     if (!name) return [];
     return [{
       id: document.id,
       name,
+      slug: readText(data, 'slug'),
+      visible: readBoolean(data, 'visible'),
       order: readNumber(data, 'order'),
     }];
   });
@@ -93,12 +102,15 @@ function readCategories(snapshot: QuerySnapshot<DocumentData>): PublicCategory[]
 function readSubcategories(snapshot: QuerySnapshot<DocumentData>): PublicSubcategory[] {
   return snapshot.docs.flatMap((document) => {
     const data: Record<string, unknown> = document.data();
+    if (data.visible === false) return [];
     const name = readText(data, 'name');
     const categoryId = readText(data, 'categoryId');
     if (!name || !categoryId) return [];
     return [{
       id: document.id,
       name,
+      slug: readText(data, 'slug'),
+      visible: readBoolean(data, 'visible'),
       categoryId,
       order: readNumber(data, 'order'),
     }];
@@ -108,6 +120,7 @@ function readSubcategories(snapshot: QuerySnapshot<DocumentData>): PublicSubcate
 function readProducts(snapshot: QuerySnapshot<DocumentData>): PublicProduct[] {
   return snapshot.docs.flatMap((document) => {
     const data: Record<string, unknown> = document.data();
+    if (data.visible === false) return [];
     const name = readText(data, 'name');
     const image = readText(data, 'image');
     const categoryId = readText(data, 'categoryId');
@@ -116,6 +129,8 @@ function readProducts(snapshot: QuerySnapshot<DocumentData>): PublicProduct[] {
     return [{
       id: document.id,
       name,
+      slug: readText(data, 'slug'),
+      visible: readBoolean(data, 'visible'),
       image,
       categoryId,
       subcategoryId: readText(data, 'subcategoryId'),
@@ -165,7 +180,8 @@ export function createWorkItemsFromCatalog(catalog: CatalogData): WorkItem[] {
     }
 
     return [{
-      slug: product.id,
+      slug: product.slug || product.id,
+      productId: product.id,
       title: product.name,
       category: category.name,
       categoryId: category.id,

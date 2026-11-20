@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   useLayoutEffect,
   type KeyboardEvent,
   type PointerEvent,
@@ -51,6 +52,28 @@ const workDetailVariants = {
   exit: (direction: -1 | 1) => ({ opacity: 0, x: direction * -32 }),
 };
 
+function subscribeToSearch(callback: () => void) {
+  window.addEventListener('popstate', callback);
+  return () => window.removeEventListener('popstate', callback);
+}
+
+function getSearchSnapshot() {
+  return window.location.search;
+}
+
+function getServerSearchSnapshot() {
+  return '';
+}
+
+function updateWorkSearch(update: (params: URLSearchParams) => void) {
+  const params = new URLSearchParams(window.location.search);
+  update(params);
+  const query = params.toString();
+  const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+  window.history.replaceState(window.history.state, '', nextUrl);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
 function getWhatsAppLink(item?: WorkItem) {
   const message = item
     ? `Hi, I'm interested in: ${item.title}`
@@ -62,6 +85,12 @@ function getWhatsAppLink(item?: WorkItem) {
 export function WorkIndex() {
   const catalog = usePublicWorkCatalog();
   const items = catalog.items;
+  const routeSearch = useSyncExternalStore(
+    subscribeToSearch,
+    getSearchSnapshot,
+    getServerSearchSnapshot,
+  );
+  const routeParams = useMemo(() => new URLSearchParams(routeSearch), [routeSearch]);
   const [activeCategory, setActiveCategory] = useState<string | 'All'>('All');
   const [selectedSubcategory, setSelectedSubcategory] = useState<{
     category: string;
@@ -77,8 +106,7 @@ export function WorkIndex() {
   const [selectedItemSlug, setSelectedItemSlug] = useState<string | null>(null);
   const [quoteContext, setQuoteContext] = useState<QuoteContext>(undefined);
   const [detailDirection, setDetailDirection] = useState<-1 | 1>(1);
-  const selectedItem = items.find((item) => item.slug === selectedItemSlug) ?? null;
-  const detailOpen = selectedItem !== null;
+  const routeProductValue = routeParams.get('product');
   const reduceMotion = useReducedMotion();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const introRef = useRef<HTMLElement | null>(null);
@@ -124,11 +152,12 @@ export function WorkIndex() {
     return [];
   }, [catalog.categories, catalog.hasManagedProducts, catalog.subcategories]);
   const categoryOptions = useMemo(() => {
-    const byKey = new Map<string, { key: string; label: string; order?: number }>();
+    const byKey = new Map<string, { key: string; label: string; slug?: string; order?: number }>();
     for (const category of catalog.categories) {
       byKey.set(category.id, {
         key: category.id,
         label: category.name,
+        slug: category.slug,
         order: category.order,
       });
     }
@@ -146,15 +175,54 @@ export function WorkIndex() {
     () => ['All', ...categoryOptions.map((category) => category.key)],
     [categoryOptions],
   );
-  const effectiveActiveCategory = activeCategory === 'All'
-    || categoryOptions.some((category) => category.key === activeCategory)
-    ? activeCategory
+  const routeSubcategoryValue = routeParams.get('subcategory');
+  const routeSubcategory = routeSubcategoryValue
+    ? catalog.subcategories.find((entry) => (
+      entry.id === routeSubcategoryValue || entry.slug === routeSubcategoryValue
+    ))
+    : undefined;
+  const staticRouteSubcategoryItem = routeSubcategoryValue && !routeSubcategory
+    ? items.find((item) => (
+      item.subcategory === routeSubcategoryValue
+      || item.subcategoryLabel?.toLowerCase() === routeSubcategoryValue.toLowerCase()
+    ))
+    : undefined;
+  const routeSubcategoryFilter = routeSubcategory
+    ? { category: routeSubcategory.categoryId, subcategory: routeSubcategory.id }
+    : staticRouteSubcategoryItem
+      ? {
+        category: getCategoryKey(staticRouteSubcategoryItem),
+        subcategory: getSubcategoryKey(staticRouteSubcategoryItem) ?? '',
+      }
+      : null;
+  const routeCategoryValue = routeParams.get('category');
+  const routeCategoryKey = routeCategoryValue
+    ? categoryOptions.find((category) => (
+      category.key === routeCategoryValue
+      || category.slug === routeCategoryValue
+      || category.label.toLowerCase() === routeCategoryValue.toLowerCase()
+    ))?.key
+    : undefined;
+  const routeProduct = routeProductValue
+    ? items.find((item) => item.slug === routeProductValue || item.productId === routeProductValue)
+    : undefined;
+  const selectedItem = items.find((item) => item.slug === selectedItemSlug)
+    ?? routeProduct
+    ?? null;
+  const detailOpen = selectedItem !== null;
+  const requestedCategory = routeSubcategoryFilter?.category
+    ?? routeCategoryKey
+    ?? activeCategory;
+  const effectiveActiveCategory = requestedCategory === 'All'
+    || categoryOptions.some((category) => category.key === requestedCategory)
+    ? requestedCategory
     : 'All';
-  const effectiveSelectedSubcategory = selectedSubcategory
-    && categoryOptions.some((category) => category.key === selectedSubcategory.category)
-    && subcategoriesFor(selectedSubcategory.category)
-      .some((subcategory) => subcategory.key === selectedSubcategory.subcategory)
-    ? selectedSubcategory
+  const requestedSubcategory = routeSubcategoryFilter ?? selectedSubcategory;
+  const effectiveSelectedSubcategory = requestedSubcategory
+    && categoryOptions.some((category) => category.key === requestedSubcategory.category)
+    && subcategoriesFor(requestedSubcategory.category)
+      .some((subcategory) => subcategory.key === requestedSubcategory.subcategory)
+    ? requestedSubcategory
     : null;
   const openCategoryKey = openCategory
     && categoryOptions.some((category) => category.key === openCategory)
@@ -166,6 +234,33 @@ export function WorkIndex() {
       || effectiveSelectedSubcategory.category !== getCategoryKey(item)
       || getSubcategoryKey(item) === effectiveSelectedSubcategory.subcategory)
   )), [effectiveActiveCategory, effectiveSelectedSubcategory, items]);
+
+  function clearRouteFilters() {
+    updateWorkSearch((params) => {
+      params.delete('category');
+      params.delete('subcategory');
+      params.delete('product');
+    });
+  }
+
+  function selectCategoryFilter(category: string | 'All') {
+    setActiveCategory(category);
+    setSelectedSubcategory(null);
+    clearRouteFilters();
+  }
+
+  function selectSubcategoryFilter(category: string, subcategory: string) {
+    setActiveCategory(category);
+    setSelectedSubcategory({ category, subcategory });
+    clearRouteFilters();
+  }
+
+  function closeSelectedItem() {
+    setSelectedItemSlug(null);
+    if (routeParams.has('product')) {
+      updateWorkSearch((params) => params.delete('product'));
+    }
+  }
 
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -411,7 +506,7 @@ export function WorkIndex() {
 
   function openQuote(item?: WorkItem) {
     restoreCardFocusRef.current = false;
-    setSelectedItemSlug(null);
+    closeSelectedItem();
     setQuoteContext(item ?? null);
   }
 
@@ -444,7 +539,7 @@ export function WorkIndex() {
   function handleDialogKeyDown(event: KeyboardEvent<HTMLDialogElement>) {
     if (event.key === 'Escape') {
       event.preventDefault();
-      setSelectedItemSlug(null);
+      closeSelectedItem();
       return;
     }
 
@@ -520,8 +615,7 @@ export function WorkIndex() {
                       className="work-index__filter-select"
                       aria-pressed={isActive}
                       onClick={() => {
-                        setActiveCategory(category);
-                        setSelectedSubcategory(null);
+                        selectCategoryFilter(category);
                         closeSubcategoryMenu();
                       }}
                     >
@@ -619,11 +713,7 @@ export function WorkIndex() {
                   aria-current={isSelected ? 'true' : undefined}
                   className={`work-index__submenu-item${isSelected ? ' is-active' : ''}${count === 0 ? ' is-empty' : ''}`}
                   onClick={() => {
-                    setActiveCategory(openCategoryKey);
-                    setSelectedSubcategory({
-                      category: openCategoryKey,
-                      subcategory: subcategory.key,
-                    });
+                    selectSubcategoryFilter(openCategoryKey, subcategory.key);
                     filterTriggerRefs.current.get(openCategoryKey)?.focus();
                     closeSubcategoryMenu();
                   }}
@@ -748,10 +838,10 @@ export function WorkIndex() {
           aria-labelledby="work-detail-title"
           onCancel={(event) => {
             event.preventDefault();
-            setSelectedItemSlug(null);
+            closeSelectedItem();
           }}
           onClick={(event) => {
-            if (event.target === event.currentTarget) setSelectedItemSlug(null);
+            if (event.target === event.currentTarget) closeSelectedItem();
           }}
           onKeyDown={handleDialogKeyDown}
           onPointerDown={startDetailSwipe}
@@ -777,7 +867,7 @@ export function WorkIndex() {
                 type="button"
                 className="work-detail__close"
                 aria-label="Close work details"
-                onClick={() => setSelectedItemSlug(null)}
+                onClick={closeSelectedItem}
               >
                 ×
               </button>

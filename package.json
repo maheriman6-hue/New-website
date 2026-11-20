@@ -19,7 +19,8 @@
     "lenis": "^1.1.18",
     "next": "^16.4.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-easy-crop": "^6.2.5"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

@@ -466,7 +466,28 @@
 
 .buttonGroup {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.heroInterval {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mu);
+  font-size: 12px;
+}
+
+.heroInterval input {
+  width: 76px;
+  height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--ln);
+  border-radius: 10px;
+  background: var(--fld);
+  color: var(--tx);
+  font: inherit;
 }
 
 .button {
@@ -595,6 +616,12 @@
   object-fit: cover;
 }
 
+.heroThumbnail {
+  width: 40px;
+  height: 68px;
+  border-radius: 7px;
+}
+
 .itemInfo {
   min-width: 0;
   flex: 1;
@@ -630,6 +657,11 @@
 .pillOn {
   background: rgba(225, 29, 46, 0.16);
   color: #ff9aa3;
+}
+
+.warningPill {
+  background: rgba(255, 176, 76, 0.14);
+  color: #ffc078;
 }
 
 .iconButton {
@@ -748,6 +780,13 @@
   font-weight: 600;
 }
 
+.helperText {
+  margin: -3px 0 8px;
+  color: var(--mu);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .fieldHeading {
   margin: 24px 0 14px;
   padding-top: 18px;
@@ -774,6 +813,12 @@
   font-size: 13px;
 }
 
+.imageBox.cropPreview {
+  height: auto;
+  max-height: 240px;
+  aspect-ratio: 9 / 16;
+}
+
 .imageBox img {
   width: 100%;
   height: 100%;
@@ -796,6 +841,95 @@
 
 .hiddenFileInput {
   display: none;
+}
+
+.cropperOverlay {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.82);
+}
+
+.cropperDialog {
+  width: min(920px, 100%);
+  max-height: calc(100dvh - 36px);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  border: 1px solid var(--ln);
+  border-radius: 18px;
+  background: var(--side);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.7);
+}
+
+.cropperHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ln);
+}
+
+.cropperHeader h2 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.cropperHeader p {
+  margin-top: 3px;
+  color: var(--mu);
+  font-size: 12px;
+}
+
+.cropperHeader .iconButton svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.cropperViewport {
+  position: relative;
+  width: 100%;
+  height: min(60vh, 590px);
+  min-height: 300px;
+  background: #050506;
+}
+
+.cropperWarning {
+  margin: 12px 20px 0;
+  padding: 9px 12px;
+  border: 1px solid rgba(255, 176, 76, 0.35);
+  border-radius: 9px;
+  background: rgba(255, 176, 76, 0.1);
+  color: #ffc078;
+  font-size: 12px;
+}
+
+.cropperZoom {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  color: var(--mu);
+  font-size: 13px;
+}
+
+.cropperZoom input {
+  flex: 1;
+  accent-color: var(--rh);
+}
+
+.cropperFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 20px 18px;
 }
 
 .switchLabel {
@@ -932,6 +1066,20 @@
 
   .dashboardMain {
     padding: 22px 16px;
+  }
+
+  .cropperOverlay {
+    padding: 10px;
+  }
+
+  .cropperDialog {
+    max-height: calc(100dvh - 20px);
+    border-radius: 14px;
+  }
+
+  .cropperViewport {
+    height: min(52vh, 440px);
+    min-height: 240px;
   }
 }
 
