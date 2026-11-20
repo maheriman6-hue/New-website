@@ -10,6 +10,7 @@ export interface AdminRecord {
 export interface CategoryDocument extends AdminRecord {
   name?: string;
   image?: string;
+  imageFit?: 'contain' | 'cover';
   caption?: string;
   description?: string;
   order?: number;
@@ -19,6 +20,7 @@ export interface CategoryDocument extends AdminRecord {
 export interface SubcategoryDocument extends AdminRecord {
   name?: string;
   image?: string;
+  imageFit?: 'contain' | 'cover';
   categoryId?: string;
   caption?: string;
   order?: number;
@@ -45,6 +47,7 @@ export interface ProductDocument extends AdminRecord {
 
 export interface MediaDocument extends AdminRecord {
   image?: string;
+  imageFit?: 'contain' | 'cover';
   caption?: string;
   alt?: string;
   placement?: string;

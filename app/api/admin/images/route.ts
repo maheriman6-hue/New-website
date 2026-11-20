@@ -25,6 +25,31 @@ function getImageKit() {
   return new ImageKit({ publicKey, privateKey, urlEndpoint });
 }
 
+function allowedOrigins(request: Request) {
+  const origins = new Set([new URL(request.url).origin]);
+  const addOrigin = (value: string | null) => {
+    if (!value) return;
+    try {
+      const url = new URL(value);
+      if (url.protocol === 'https:' || url.protocol === 'http:') origins.add(url.origin);
+    } catch {
+      return;
+    }
+  };
+
+  addOrigin(process.env.URL ?? null);
+  addOrigin(process.env.DEPLOY_PRIME_URL ?? null);
+  addOrigin(process.env.DEPLOY_URL ?? null);
+
+  const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0].trim()
+    ?? request.headers.get('host');
+  const forwardedProto = request.headers.get('x-forwarded-proto')?.split(',')[0].trim()
+    ?? new URL(request.url).protocol.replace(':', '');
+  if (forwardedHost) addOrigin(`${forwardedProto}://${forwardedHost}`);
+
+  return origins;
+}
+
 async function authorizeOwner(request: Request): Promise<Response | null> {
   const authorization = request.headers.get('authorization');
   const token = authorization?.match(/^Bearer (.+)$/i)?.[1];
@@ -105,7 +130,7 @@ async function authorizeOwner(request: Request): Promise<Response | null> {
   }
 
   const origin = request.headers.get('origin');
-  if (origin && origin !== new URL(request.url).origin) {
+  if (origin && !allowedOrigins(request).has(origin)) {
     return jsonError('Cross-origin image requests are not allowed.', 403);
   }
 

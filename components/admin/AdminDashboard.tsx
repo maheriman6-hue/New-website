@@ -932,7 +932,14 @@ export default function AdminDashboard() {
           </label>
           <div className={styles.imageBox}>
             {image ? (
-              <Image src={image} alt="" width={430} height={170} unoptimized />
+              <Image
+                src={image}
+                alt=""
+                width={430}
+                height={170}
+                unoptimized
+                style={{ objectFit: draft.imageFit === 'cover' ? 'cover' : 'contain' }}
+              />
             ) : (
               'No image yet'
             )}
@@ -1025,7 +1032,11 @@ export default function AdminDashboard() {
             onChange={(event) => setDraftValue(section, field.key, event.target.value)}
           >
             {field.options.map((option) => (
-              <option key={option} value={option}>{option}</option>
+              <option key={option} value={option}>
+                {field.key === 'imageFit'
+                  ? option === 'cover' ? 'Fill frame (crop edges)' : 'Show whole image'
+                  : option}
+              </option>
             ))}
           </select>
         </div>
@@ -1179,7 +1190,14 @@ export default function AdminDashboard() {
           <button className={styles.itemOpen} type="button" onClick={() => openDrawer(record)}>
             <div className={styles.thumbnail}>
               {image ? (
-                <Image src={image} alt="" width={56} height={56} unoptimized />
+                <Image
+                  src={image}
+                  alt=""
+                  width={56}
+                  height={56}
+                  unoptimized
+                  style={{ objectFit: record.imageFit === 'cover' ? 'cover' : 'contain' }}
+                />
               ) : contentSection === 'subscribers' ? (
                 String(record.email || '?').slice(0, 1).toUpperCase()
               ) : (

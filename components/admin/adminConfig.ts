@@ -1,4 +1,4 @@
-import type { SectionConfig, SectionKey } from './adminTypes';
+import type { SectionConfig, SectionKey, SelectField } from './adminTypes';
 
 const visibleField = {
   key: 'visible',
@@ -6,6 +6,14 @@ const visibleField = {
   label: 'Show on website',
   defaultValue: true,
 } as const;
+
+const imageFitField: SelectField = {
+  key: 'imageFit',
+  type: 'select',
+  label: 'Image display',
+  options: ['cover', 'contain'],
+  defaultValue: 'contain',
+};
 
 export const adminSections = {
   categories: {
@@ -17,6 +25,7 @@ export const adminSections = {
     hint: 'Top-level groups shown on your website, like Men, Women or Electronics.',
     fields: [
       { key: 'image', type: 'image', label: 'Category image' },
+      imageFitField,
       { key: 'name', type: 'text', label: 'Name', required: true },
       { key: 'caption', type: 'text', label: 'Caption (short line under the name)' },
       { key: 'description', type: 'textarea', label: 'Description' },
@@ -33,6 +42,7 @@ export const adminSections = {
     hint: 'Groups inside a category, like Shirts inside Men. Each one belongs to a category.',
     fields: [
       { key: 'image', type: 'image', label: 'Subcategory image' },
+      imageFitField,
       { key: 'name', type: 'text', label: 'Name', required: true },
       {
         key: 'categoryId',
@@ -55,6 +65,7 @@ export const adminSections = {
     hint: 'Visible products appear on the Work page. Link each product to a category and, when available, one of its subcategories.',
     fields: [
       { key: 'image', type: 'image', label: 'Main product image', required: true },
+      imageFitField,
       { key: 'name', type: 'text', label: 'Product name', required: true },
       { key: 'alt', type: 'text', label: 'Image alt text' },
       { key: 'price', type: 'number', label: 'Price' },
@@ -76,13 +87,6 @@ export const adminSections = {
       { key: 'description', type: 'textarea', label: 'Description' },
       { key: 'badge', type: 'text', label: 'Badge text (for example New or Sale)' },
       { key: 'imagePosition', type: 'text', label: 'Image position (CSS object-position)' },
-      {
-        key: 'imageFit',
-        type: 'select',
-        label: 'Image fit',
-        options: ['cover', 'contain'],
-        defaultValue: 'cover',
-      },
       { key: 'order', type: 'number', label: 'Display order (1 shows first)' },
       { key: 'featured', type: 'toggle', label: 'Feature on homepage' },
       { key: 'inStock', type: 'toggle', label: 'In stock', defaultValue: true },
@@ -98,6 +102,7 @@ export const adminSections = {
     hint: 'Banners, gallery and slider images with captions.',
     fields: [
       { key: 'image', type: 'image', label: 'Image', required: true },
+      imageFitField,
       { key: 'caption', type: 'text', label: 'Caption' },
       { key: 'alt', type: 'text', label: 'Alt text (describes the image for accessibility)' },
       {
